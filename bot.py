@@ -42,7 +42,7 @@ async def on_message(message):
 		print (f'{message.author} requested the pfp of {requestedRawString}\n\n')
 
 	#Echo command
-	if message.content.startswith('echo') && message.author.id == 595719716560175149:
+	if message.content.startswith('echo') and message.author.id == 595719716560175149:
 		messageParts = message.split(' ', maxsplit = 3)
 		print (messageParts)
 client.run(TOKEN)
