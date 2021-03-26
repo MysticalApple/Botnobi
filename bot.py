@@ -13,7 +13,7 @@ async def on_ready():
 	print('Bot ready!')
 	print('Connected to:\n')
 	for guild in client.guilds: 
-		print (f'   {guild}\n')
+		print (f'   {guild}')
 
 @client.event
 async def on_message(message):
@@ -48,6 +48,7 @@ async def on_message(message):
 	if message.content.startswith('echo') and message.author.id == 595719716560175149:
 		messageParts = message.content.split('\n', maxsplit = 3)
 		sendChannel = discord.utils.get(client.get_all_channels(), guild__name = messageParts[1], name = messageParts[2])
-		print (sendChannel.name)
+		await sendChannel.send(messageParts[3])
+		print (f'Sent "{messageParts[3]}" to channel #{sendChannel}\n')
 
 client.run(TOKEN)
