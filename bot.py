@@ -12,7 +12,7 @@ client = discord.Client(intents=intents)
 async def on_ready():
 	print('Bot ready!')
 	print('Connected to:\n')
-	for guild in Client.guilds: 
+	for guild in client.guilds: 
 		print (f'   {guild}\n')
 
 @client.event
