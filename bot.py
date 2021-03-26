@@ -10,7 +10,7 @@ client = discord.Client(intents=intents)
 
 @client.event
 async def on_ready():
-	print('Ready!')
+	print('Bot ready!')
 
 @client.event
 async def on_message(message):
