@@ -13,7 +13,7 @@ async def on_ready():
 	print('Bot ready!')
 	print('Connected to:\n')
 	for guild in Client.guilds: 
-		print (f'   {i}\n')
+		print (f'   {guild}\n')
 
 @client.event
 async def on_message(message):
