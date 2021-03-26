@@ -47,7 +47,7 @@ async def on_message(message):
 	#Echo command
 	if message.content.startswith('echo') and message.author.id == 595719716560175149:
 		messageParts = message.content.split('\n', maxsplit = 3)
-		sendGuild = discord.utils.get(client.guilds, guild__name = messageParts[1])
-		print (sendGuild.name)
+		sendChannel = discord.utils.get(client.get_all_channels(), guild__name = messageParts[1], name = messageParts[2])
+		print (sendChannel.name)
 
 client.run(TOKEN)
