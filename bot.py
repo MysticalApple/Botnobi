@@ -36,7 +36,7 @@ async def on_message(message):
 
 		requestedRawString = message.content[4:]
 
-		requestedID = discord.utils.get(client.get_all_members(), display_name=requestedRawString).id
+		requestedID = discord.utils.get(client.get_all_members(), display_name = requestedRawString).id
 
 		requestedUser = client.get_user(requestedID)
 
@@ -47,5 +47,7 @@ async def on_message(message):
 	#Echo command
 	if message.content.startswith('echo') and message.author.id == 595719716560175149:
 		messageParts = message.content.split('\n', maxsplit = 3)
+		sendGuild = discord.utils.get(client.guilds, guild.name = messageParts[1])
+		print (sendGuild.name)
 
 client.run(TOKEN)
