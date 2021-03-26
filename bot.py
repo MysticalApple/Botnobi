@@ -43,6 +43,6 @@ async def on_message(message):
 
 	#Echo command
 	if message.content.startswith('echo') and message.author.id == 595719716560175149:
-		messageParts = message.content.split(' ', maxsplit = 3)
+		messageParts = message.content.split('\n', maxsplit = 3)
 		print (messageParts)
 client.run(TOKEN)
