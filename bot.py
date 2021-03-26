@@ -11,6 +11,8 @@ client = discord.Client(intents=intents)
 @client.event
 async def on_ready():
 	print('Bot ready!')
+	print('Connected to:\n')
+	for guild in Client.guilds print (f'{i}\n')
 
 @client.event
 async def on_message(message):
