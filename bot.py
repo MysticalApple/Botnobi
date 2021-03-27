@@ -1,6 +1,7 @@
 # bot.py
 import os
 import discord
+import random
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -52,5 +53,11 @@ async def on_message(message):
 		sendChannel = discord.utils.get(client.get_all_channels(), guild__name = messageParts[1], name = messageParts[2])
 		await sendChannel.send(messageParts[3])
 		print (f'Sent "{messageParts[3]}" to channel #{sendChannel}\n')
+
+	#@someone
+	if '@someone' in message.content:
+		randomMember = random.choice(message.guild.members)
+		print (f'Chose @{randomMember.display_name}')
+		await message.channel.send(f'<@!{randomMember.id}>')
 
 client.run(TOKEN)
