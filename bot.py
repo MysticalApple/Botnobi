@@ -21,7 +21,7 @@ async def on_ready():
 @client.event
 async def on_message(message):
 	
-	#Hello there response
+	#hello there response
 	ignoreSymbols = '!,.?'
 	response = 'General Kenobi!'
 
@@ -34,7 +34,7 @@ async def on_message(message):
 		await message.channel.send(response)
 		print (f'In {message.guild} #{message.channel}:\n   {message.author} ᴬᴷᴬ {message.author.display_name} >>> {message.content}\n   {client.user} ᴬᴷᴬ {client.user.display_name} >>> {response}\n\n')
 
-	#PFP grabber
+	#pfp grabber
 	if message.content.startswith('pfp'):
 
 		requestedRawString = message.content[4:]
@@ -47,7 +47,7 @@ async def on_message(message):
 		await message.channel.send(requestedUser.avatar_url)
 		print (f'{message.author} requested the pfp of {requestedRawString}\n\n')
 
-	#Echo command
+	#echo command
 	if message.content.startswith('echo') and message.author.id == 595719716560175149:
 		messageParts = message.content.split('\n', maxsplit = 3)
 		sendChannel = discord.utils.get(client.get_all_channels(), guild__name = messageParts[1], name = messageParts[2])
