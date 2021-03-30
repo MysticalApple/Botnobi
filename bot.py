@@ -81,7 +81,7 @@ async def on_message(message):
 
 		print (f'{message.author} sorted {sUnsortedList} into {sSortedList}')
 
-		formattedList = ''
+		sFormattedList = ''
 		for n in range(len(sSortedList)):
 			if n == 0: 
 				sFormattedList += str(sSortedList[n])
