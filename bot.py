@@ -62,7 +62,7 @@ async def on_message(message):
 
 	#stalinize
 	if message.content.startswith('stalinize'):
-		sRawList = message.content[11:]
+		sRawList = message.content[10:]
 		sRawList = sRawList.replace(' ', '')
 
 		sUnsortedStringList = sRawList.split(',')
