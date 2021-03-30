@@ -89,5 +89,42 @@ async def on_message(message):
 				sFormattedList += f', {str(sSortedList[n])}'
 		await message.channel.send(sFormattedList)
 
+	#capitalize
+	if message.content.startswith('capitalize'):
+		cRawList = message.content[11:]
+		cRawList = cRawList.replace(' ', '')
+
+		cUnsortedStringList = cRawList.split(',')
+
+		cUnsortedList = []
+		for i in cUnsortedStringList:
+			cUnsortedList.append(int(i))
+
+		cValue = 0
+		cDebt = 0
+		for v in range(len(cUnsortedList)):
+			if cUnsortedList[v] > 0: 
+				cValue = cValue + cUnsortedList[v]
+			elif cUnsortedList[v] < 0:
+				cDebt = cDebt + cUnsortedList[v]
+
+		cSortedList = []
+		for v in range(len(cUnsortedList)):
+			if v == 0:
+				cSortedList.append(cDebt)
+			elif v == len(cUnsortedList) - 1:
+				cSortedList.append(cValue)
+			else:
+				cSortedList.append(0)
+
+		print (f'{message.author} sorted {cUnsortedList} into {cSortedList}')
+
+		cFormattedList = ''
+		for n in range(len(cSortedList)):
+			if n == 0: 
+				cFormattedList += str(cSortedList[n])
+			else:
+				cFormattedList += f', {str(cSortedList[n])}'
+		await message.channel.send(cFormattedList)
 
 client.run(TOKEN)
