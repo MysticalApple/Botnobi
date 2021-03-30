@@ -60,35 +60,34 @@ async def on_message(message):
 		print (f'{message.author.name} randomly pinged @{randomMember.display_name}')
 		await message.channel.send(f'<@!{randomMember.id}>')
 
-	#stalin
-	if message.content.startswith('stalin'):
-		rawList = message.content[7:]
-		rawList = rawList.replace(' ', '')
+	#stalinize
+	if message.content.startswith('stalinize'):
+		sRawList = message.content[7:]
+		sRawList = sRawList.replace(' ', '')
 
-		unsortedStringList = rawList.split(',')
+		sUnsortedStringList = sRawList.split(',')
 
-		unsortedList = []
-		for i in unsortedStringList:
-			unsortedList.append(int(i))
+		sUnsortedList = []
+		for i in sUnsortedStringList:
+			sUnsortedList.append(int(i))
 
-		sortedList = []
-		for n in range(len(unsortedList)):
+		sSortedList = []
+		for n in range(len(sUnsortedList)):
 			if n == 0:
-				sortedList.append(unsortedList[n])
+				sSortedList.append(sUnsortedList[n])
 
-			elif unsortedList[n] >= sortedList[-1]:
-				sortedList.append(unsortedList[n])
+			elif sUnsortedList[n] >= sSortedList[-1]:
+				sSortedList.append(sUnsortedList[n])
 
-		print (f'{message.author} sorted {unsortedList} into {sortedList}')
+		print (f'{message.author} sorted {sUnsortedList} into {sSortedList}')
 
 		formattedList = ''
-		for n in range(len(sortedList)):
+		for n in range(len(sSortedList)):
 			if n == 0: 
-				formattedList += str(sortedList[n])
+				sFormattedList += str(sSortedList[n])
 			else:
-				formattedList += f', {str(sortedList[n])}'
-		await message.channel.send(formattedList)
-
+				sFormattedList += f', {str(sSortedList[n])}'
+		await message.channel.send(sFormattedList)
 
 
 client.run(TOKEN)
