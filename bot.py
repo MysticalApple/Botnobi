@@ -127,4 +127,18 @@ async def on_message(message):
 				cFormattedList += f', {str(cSortedList[n])}'
 		await message.channel.send(cFormattedList)
 
+		#ban
+	if message.content.startswith('ban') and message.author.id == 595719716560175149:
+
+		requestedRawString = message.content[4:]
+
+		requestedID = discord.utils.get(client.get_all_members(), display_name = requestedRawString).id
+
+		requestedUser = client.get_user(requestedID)
+
+		await message.guild.ban(requestedUser)
+		await message.channel.send(f'{requestedUser.name} was banned.')
+
+		print (f'{message.author} banned {requestedRawString}\n\n')
+
 client.run(TOKEN)
