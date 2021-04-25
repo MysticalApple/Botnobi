@@ -11,6 +11,8 @@ intents = discord.Intents.all()
 intents.members = True
 client = discord.Client(intents=intents)
 
+botUser = client.get_user(805611589058953248)
+
 @client.event
 async def on_ready():
 	print('Bot ready!')
@@ -127,7 +129,7 @@ async def on_message(message):
 				cFormattedList += f', {str(cSortedList[n])}'
 		await message.channel.send(cFormattedList)
 
-		#ban
+	#ban
 	if message.content.startswith('ban') and message.author.id == 595719716560175149:
 
 		requestedRawString = message.content[4:]
@@ -140,5 +142,9 @@ async def on_message(message):
 		await message.channel.send(f'{requestedUser.name} was banned.')
 
 		print (f'{message.author} banned {requestedRawString}\n\n')
+
+	#leave this server botnobi
+	if message.content.startswith('leave this server botnobi') and message.author.id == 595719716560175149:
+		await message.guild.leave()
 
 client.run(TOKEN)
