@@ -157,5 +157,9 @@ async def on_message(message):
 			await message.channel.send(spamMessage)
 			spamIterable = spamIterable + 1
 		print (f'Spammed "{spamMessage}" to channel #{message.channel} in {message.guild}\n')
+
+	#help
+	if message.content.startswith('b:help'):
+		await message.channel.send('https://github.com/MysticalApple/Botnobi This is all the help you\'re getting.')
 			
 client.run(TOKEN)
