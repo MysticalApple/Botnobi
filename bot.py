@@ -37,9 +37,9 @@ async def on_message(message):
 		print (f'In {message.guild} #{message.channel}:\n   {message.author} ᴬᴷᴬ {message.author.display_name} >>> {message.content}\n   {client.user} ᴬᴷᴬ {client.user.display_name} >>> {response}\n\n')
 
 	#pfp
-	if message.content.startswith('pfp'):
+	if message.content.startswith('b:pfp'):
 
-		requestedRawString = message.content[4:]
+		requestedRawString = message.content[6:]
 
 		requestedID = discord.utils.get(client.get_all_members(), display_name = requestedRawString).id
 
@@ -50,7 +50,7 @@ async def on_message(message):
 		print (f'{message.author} requested the pfp of {requestedRawString}\n\n')
 
 	#echo
-	if message.content.startswith('echo') and message.author.id == 595719716560175149:
+	if message.content.startswith('b:echo') and message.author.id == 595719716560175149:
 		messageParts = message.content.split('\n', maxsplit = 3)
 		sendChannel = discord.utils.get(client.get_all_channels(), guild__name = messageParts[1], name = messageParts[2])
 		await sendChannel.send(messageParts[3])
@@ -63,8 +63,8 @@ async def on_message(message):
 		await message.channel.send(f'<@!{randomMember.id}>')
 
 	#stalinize
-	if message.content.startswith('stalinize'):
-		sRawList = message.content[10:]
+	if message.content.startswith('b:stalinize'):
+		sRawList = message.content[12:]
 		sRawList = sRawList.replace(' ', '')
 
 		sUnsortedStringList = sRawList.split(',')
@@ -92,8 +92,8 @@ async def on_message(message):
 		await message.channel.send(sFormattedList)
 
 	#capitalize
-	if message.content.startswith('capitalize'):
-		cRawList = message.content[11:]
+	if message.content.startswith('b:capitalize'):
+		cRawList = message.content[13:]
 		cRawList = cRawList.replace(' ', '')
 
 		cUnsortedStringList = cRawList.split(',')
@@ -130,9 +130,9 @@ async def on_message(message):
 		await message.channel.send(cFormattedList)
 
 	#ban
-	if message.content.startswith('ban') and message.author.id == 595719716560175149:
+	if message.content.startswith('b:ban') and message.author.id == 595719716560175149:
 
-		requestedRawString = message.content[4:]
+		requestedRawString = message.content[6:]
 
 		requestedID = discord.utils.get(client.get_all_members(), display_name = requestedRawString).id
 
@@ -146,5 +146,16 @@ async def on_message(message):
 	#leave this server botnobi
 	if message.content.startswith('leave this server botnobi') and message.author.id == 595719716560175149:
 		await message.guild.leave()
+		print (f'Botnobi left {message.guild}')
 
+	#spam
+	if message.content.startswith('b:spam') and message.author.id == 595719716560175149:
+		spamMessage = message.content[7:]
+
+		spamIterable = 0
+		while spamIterable < 50:
+			await message.channel.send(spamMessage)
+			spamIterable = spamIterable + 1
+		print (f'Spammed "{spamMessage}" to channel #{message.channel} in {message.guild}\n')
+			
 client.run(TOKEN)
