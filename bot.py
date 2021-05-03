@@ -5,7 +5,7 @@ import random
 from dotenv import load_dotenv
 load_dotenv()
 
-TOKEN = os.getenv('DISCORD_TOKEN_AMALGAM')
+TOKEN = os.getenv('DISCORD_TOKEN')
 
 intents = discord.Intents.all()
 intents.members = True
@@ -175,6 +175,6 @@ async def on_message(message):
 	#help
 	if message.content.startswith('b:help'):
 		await message.channel.send('https://github.com/MysticalApple/Botnobi This is all the help you\'re getting.')
-		
+
 			
 client.run(TOKEN)
