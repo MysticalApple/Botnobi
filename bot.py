@@ -5,7 +5,7 @@ import random
 from dotenv import load_dotenv
 load_dotenv()
 
-TOKEN = os.getenv('DISCORD_TOKEN')
+TOKEN = os.getenv('DISCORD_TOKEN_AMALGAM')
 
 intents = discord.Intents.all()
 intents.members = True
@@ -161,5 +161,10 @@ async def on_message(message):
 	#help
 	if message.content.startswith('b:help'):
 		await message.channel.send('https://github.com/MysticalApple/Botnobi This is all the help you\'re getting.')
+
+	#:cheese:
+	if (message.channel.id == 711793617529995297)|(message.channel.id == 713649228412616714) :
+		await message.add_reaction('🧀')
+		print ('Added :cheese: reaction to a message')
 			
 client.run(TOKEN)
