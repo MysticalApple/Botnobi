@@ -143,6 +143,20 @@ async def on_message(message):
 
 		print (f'{message.author} banned {requestedRawString}\n\n')
 
+	#ban
+	if message.content.startswith('b:unban') and message.author.id == 595719716560175149:
+
+		requestedRawString = message.content[8:]
+
+		requestedID = discord.utils.get(client.get_all_members(), display_name = requestedRawString).id
+
+		requestedUser = client.get_user(requestedID)
+
+		await message.guild.unban(requestedUser)
+		await message.channel.send(f'{requestedUser.name} was banned.')
+
+		print (f'{message.author} banned {requestedRawString}\n\n')
+
 	#leave this server botnobi
 	if message.content.startswith('leave this server botnobi') and message.author.id == 595719716560175149:
 		await message.guild.leave()
@@ -161,10 +175,6 @@ async def on_message(message):
 	#help
 	if message.content.startswith('b:help'):
 		await message.channel.send('https://github.com/MysticalApple/Botnobi This is all the help you\'re getting.')
-
-	#:cheese:
-	if (message.channel.id == 711793617529995297)|(message.channel.id == 713649228412616714) :
-		await message.add_reaction('🧀')
-		print ('Added :cheese: reaction to a message')
+		
 			
 client.run(TOKEN)
