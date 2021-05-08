@@ -130,32 +130,28 @@ async def on_message(message):
 		await message.channel.send(cFormattedList)
 
 	#ban
-	if message.content.startswith('b:ban') and message.author.id == 595719716560175149:
+	if message.content.startswith('b:ban') and message.author.guild_permissions.ban_members:
 
-		requestedRawString = message.content[6:]
+		requestedID = message.content[6:]
 
-		requestedID = discord.utils.get(client.get_all_members(), display_name = requestedRawString).id
-
-		requestedUser = client.get_user(requestedID)
+		requestedUser = await client.fetch_user(requestedID)
 
 		await message.guild.ban(requestedUser)
 		await message.channel.send(f'{requestedUser.name} was banned.')
 
 		print (f'{message.author} banned {requestedRawString}\n\n')
 
-	#ban
-	if message.content.startswith('b:unban') and message.author.id == 595719716560175149:
+	#unban
+	if message.content.startswith('b:unban') and message.author.guild_permissions.ban_members:
 
-		requestedRawString = message.content[8:]
+		requestedID = message.content[8:]
 
-		requestedID = discord.utils.get(client.get_all_members(), display_name = requestedRawString).id
-
-		requestedUser = client.get_user(requestedID)
+		requestedUser = await client.fetch_user(requestedID)
 
 		await message.guild.unban(requestedUser)
-		await message.channel.send(f'{requestedUser.name} was banned.')
+		await message.channel.send(f'{requestedUser.name} was unbanned.')
 
-		print (f'{message.author} banned {requestedRawString}\n\n')
+		print (f'{message.author} unbanned {requestedRawString}\n\n')
 
 	#leave this server botnobi
 	if message.content.startswith('leave this server botnobi') and message.author.id == 595719716560175149:
