@@ -139,7 +139,7 @@ async def on_message(message):
 		await message.guild.ban(requestedUser)
 		await message.channel.send(f'{requestedUser.name} was banned.')
 
-		print (f'{message.author} banned {requestedRawString}\n\n')
+		print (f'{message.author} banned {requestedUser.name}\n\n')
 
 	#unban
 	if message.content.startswith('b:unban') and message.author.guild_permissions.ban_members:
@@ -151,7 +151,7 @@ async def on_message(message):
 		await message.guild.unban(requestedUser)
 		await message.channel.send(f'{requestedUser.name} was unbanned.')
 
-		print (f'{message.author} unbanned {requestedRawString}\n\n')
+		print (f'{message.author} unbanned {requestedUser.name}\n\n')
 
 	#leave this server botnobi
 	if message.content.startswith('leave this server botnobi') and message.author.id == 595719716560175149:
