@@ -172,5 +172,10 @@ async def on_message(message):
 	if message.content.startswith('b:help'):
 		await message.channel.send('https://github.com/MysticalApple/Botnobi This is all the help you\'re getting.')
 
-			
+	#Sync or Async
+	if message.content.startswith('b:Sync or Async'):
+		options = ['Sync', 'Async']
+		await message.channel.send(random.choice(options))
+
+
 client.run(TOKEN)
