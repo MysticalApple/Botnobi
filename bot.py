@@ -26,6 +26,18 @@ async def on_ready():
 
     await bot.change_presence(activity=discord.Game(name='Undergoing Renovations'))
 
+#errors are not pog
+@bot.event
+async def on_command_error(ctx, error):
+    ignored_errors = (commands.CommandNotFound, commands.UserInputError)
+    if isinstance(error, ignored_errors):
+        return
+
+    if isinstance(error, commands.CheckFailure):
+        await ctx.reply("Stop it. Get some perms.", mention_author=False)
+   
+    raise error
+
 # Command center
 @bot.command(name='test')
 async def test(ctx):
@@ -56,16 +68,6 @@ async def disconnect(ctx):
     """
     await ctx.send('Disconnecting...')
     await bot.logout()
-
-@disconnect.error
-async def logout_error(ctx, error):
-    """
-    Prevents you peasants from spamming my logs
-    """
-    if isinstance(error, commands.CheckFailure):
-        await ctx.send(f"!ban {ctx.author.mention} for trying to mess with Botnobi")
-    else:
-        raise error
 
 
 # Run the damn thing already
