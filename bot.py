@@ -1,4 +1,5 @@
 # Libraries i may or may not use
+from utils.util import clean_code
 import discord
 from discord.ext import commands
 import logging
@@ -6,6 +7,10 @@ from pathlib import Path
 import json
 import random
 import platform
+import io
+import contextlib
+import textwrap
+import traceback
 
 cwd = Path(__file__).parents[0]
 cwd = str(cwd)
@@ -35,8 +40,6 @@ async def on_command_error(ctx, error):
 
     if isinstance(error, commands.CheckFailure):
         await ctx.reply("Stop it. Get some perms.", mention_author=False)
-   
-    raise error
 
 # Command center
 @bot.command(name='test')
@@ -80,6 +83,35 @@ async def disconnect(ctx):
     """
     await ctx.send('Disconnecting...')
     await bot.logout()
+
+@bot.command(name='eval')
+@commands.is_owner()
+async def eval(ctx, *, code):
+    code = clean_code(code)
+
+    local_variables = {
+        "discord": discord,
+        "commands": commands,
+        "bot": bot,
+        "ctx": ctx
+    }
+
+
+    stdout = io.StringIO()
+
+    try:
+        with contextlib.redirect_stdout(stdout):
+            exec(
+                f"async def func():\n{textwrap.indent(code, '    ')}", local_variables
+            )
+
+            obj = await local_variables["func"]()
+            result = f"```py\n‌{stdout.getvalue()}\n```"
+        
+    except Exception as e:
+        result = "".join(traceback.format_exception(e, e, e.__traceback__))
+
+    await ctx.send(result)
 
 
 # Run the damn thing already
