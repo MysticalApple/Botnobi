@@ -56,11 +56,23 @@ async def info(ctx):
     python_version = platform.python_version()
     dpy_version = discord.__version__
     server_count = len(bot.guilds)
-    member_count = len(set(bot.get_all_members()))
+    user_count = len(set(bot.get_all_members()))
 
-    await ctx.send(f"Botnobi is in {server_count} servers and knows about {member_count} unique users.\nRunning discord.py {dpy_version} and Python {python_version}")
+    embed = discord.Embed(title=f':information_source: Botnobi', description='\uFEFF', color=ctx.guild.me.color, timestamp=ctx.message.created_at)
 
-@bot.command(aliases=['dc,disconnect,logout'])
+    embed.add_field(name='<:github:842921746277203978>', value="[Repo](https://github.com/MysticalApple/Botnobi-2.0)")
+    embed.add_field(name='Python Version', value=python_version)
+    embed.add_field(name='Discord.py Version', value=dpy_version)
+    embed.add_field(name='Servers', value=server_count)
+    embed.add_field(name='Users', value=user_count)
+    embed.add_field(name='Bot Creator', value="<@!595719716560175149>")
+
+    embed.set_footer(text=f"As of")
+    embed.set_author(name=ctx.guild.me.display_name, icon_url=bot.user.avatar_url)
+
+    await ctx.send(embed=embed)
+
+@bot.command(name='disconnect')
 @commands.is_owner()
 async def disconnect(ctx):
     """
