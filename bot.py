@@ -113,12 +113,12 @@ async def eval(ctx, *, code):
             exec(f"async def func():\n{textwrap.indent(code, '    ')}", local_variables)
 
             obj = await local_variables["func"]()
-            result = f"```py\n‌{stdout.getvalue()}\n```"
+            result = f"py\n‌{stdout.getvalue()}\n"
 
     except Exception as e:
         result = "".join(traceback.format_exception(e, e, e.__traceback__))
 
-    await ctx.send(result)
+    await ctx.send(f"```{result}```")
 
 
 @bot.command(name="sheep")
