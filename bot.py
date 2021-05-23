@@ -121,5 +121,10 @@ async def eval(ctx, *, code):
     await ctx.send(result)
 
 
+@bot.command(name="sheep")
+async def sheep(ctx):
+    await ctx.send("<a:seansheep:718186115294691482>```\n         ,ww\n   wWWWWWWW_)\n   `WWWWWW'\n    II  II```")
+
+
 # Run the damn thing already
 bot.run(bot.config_token)
