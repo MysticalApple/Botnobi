@@ -128,5 +128,21 @@ async def sheep(ctx):
     )
 
 
+@bot.command(name="emotize")
+async def emotize(ctx, *, message):
+    output = ''
+    
+    for l in message:
+        if l == ' ':
+            output += l
+        elif l == '\n':
+            output += l
+        elif l.isalpha():
+            l = l.lower()
+            output += f':regional_indicator_{l}:'
+    
+    await ctx.send(output)
+
+
 # Run the damn thing already
 bot.run(bot.config_token)
