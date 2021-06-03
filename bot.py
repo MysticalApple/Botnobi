@@ -11,6 +11,7 @@ import io
 import contextlib
 import textwrap
 import traceback
+import requests
 
 cwd = Path(__file__).parents[0]
 cwd = str(cwd)
@@ -142,6 +143,12 @@ async def emotize(ctx, *, message):
             output += f':regional_indicator_{l}:'
     
     await ctx.send(output)
+
+
+@bot.command(name="inspire")
+async def inspire(ctx):
+    r = requests.get('https://inspirobot.me/api?generate=true')
+    await ctx.send(r.text)
 
 
 # Run the damn thing already
