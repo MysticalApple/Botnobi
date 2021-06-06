@@ -12,6 +12,8 @@ import contextlib
 import textwrap
 import traceback
 import requests
+from num2words import num2words
+from PIL import Image, ImageColor
 
 cwd = Path(__file__).parents[0]
 cwd = str(cwd)
@@ -138,6 +140,9 @@ async def emotize(ctx, *, message):
             output += l
         elif l == '\n':
             output += l
+        elif l.isdigit():
+            numword = num2words(l)
+            output += f':{numword}:'
         elif l.isalpha():
             l = l.lower()
             output += f':regional_indicator_{l}:'
@@ -150,6 +155,23 @@ async def inspire(ctx):
     r = requests.get('https://inspirobot.me/api?generate=true')
     await ctx.send(r.text)
 
+
+#@bot.command(name="pfp")
+#async def pfp(ctx, *, requested_user):
+#boring to implement, might do soon
+
+
+@bot.command(name="color")
+async def color(ctx, *, hex):
+    try:
+        color = ImageColor.getrgb(hex)
+    
+    except:
+        await ctx.reply("Valid color codes can be found here: https://pillow.readthedocs.io/en/stable/reference/ImageColor.html?highlight=getrgb#PIL.ImageColor.getrgb", mention_author=False)
+
+    img = Image.new('RGBA', (480, 480), color = color)
+    img.save('color.png')
+    await ctx.send(file = discord.File('color.png'))    
 
 # Run the damn thing already
 bot.run(bot.config_token)
