@@ -162,7 +162,7 @@ async def inspire(ctx):
 
 
 @bot.command(name="color")
-async def color(ctx, *, hex):
+async def color(ctx, hex):
     try:
         color = ImageColor.getrgb(hex)
     
