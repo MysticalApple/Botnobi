@@ -12,6 +12,7 @@ import contextlib
 import textwrap
 import traceback
 import requests
+import math
 from num2words import num2words
 from PIL import Image, ImageColor
 
@@ -46,6 +47,8 @@ async def on_command_error(ctx, error):
 
     if isinstance(error, commands.CheckFailure):
         await ctx.reply("Stop it. Get some perms.", mention_author=False)
+
+    return(error)
 
 
 # Command center
@@ -105,6 +108,9 @@ async def disconnect(ctx):
 @bot.command(name="eval")
 @commands.is_owner()
 async def eval(ctx, *, code):
+    """
+    Runs python code
+    """
     code = clean_code(code)
 
     local_variables = {"discord": discord, "commands": commands, "bot": bot, "ctx": ctx}
@@ -126,6 +132,9 @@ async def eval(ctx, *, code):
 
 @bot.command(name="sheep")
 async def sheep(ctx):
+    """
+    Sends a sheep
+    """
     await ctx.send(
         "<a:seansheep:718186115294691482>```\n         ,ww\n   wWWWWWWW_)\n   `WWWWWW'\n    II  II```"
     )
@@ -133,6 +142,9 @@ async def sheep(ctx):
 
 @bot.command(name="emotize")
 async def emotize(ctx, *, message):
+    """
+    Converts text into discord emojis
+    """
     output = ''
     
     for l in message:
@@ -152,6 +164,9 @@ async def emotize(ctx, *, message):
 
 @bot.command(name="inspire")
 async def inspire(ctx):
+    """
+    Uses Inspirobot to generate an inspirational quote"
+    """
     r = requests.get('https://inspirobot.me/api?generate=true')
     await ctx.send(r.text)
 
@@ -163,15 +178,29 @@ async def inspire(ctx):
 
 @bot.command(name="color")
 async def color(ctx, *, hex):
+    """
+    Sends a square of a solid color
+    """
     try:
         color = ImageColor.getrgb(hex)
     
     except:
-        await ctx.reply("Valid color codes can be found here: https://pillow.readthedocs.io/en/stable/reference/ImageColor.html?highlight=getrgb#PIL.ImageColor.getrgb", mention_author=False)
+        await ctx.reply("Valid color codes can be found here: https://pillow.readthedocs.io/en/stable/reference/ImageColor.html", mention_author=False)
 
     img = Image.new('RGBA', (480, 480), color = color)
     img.save('color.png')
     await ctx.send(file = discord.File('color.png'))    
 
+
+@bot.command(name="stackify")
+async def stackify(ctx, count: int):
+    """
+    Converts an item count into Minecraft stacks
+    """
+    stacks = math.floor(count / 64)
+    items = count % 64
+    await ctx.send(f"{count} items can fit into {stacks} stacks and {items} items.")
+
+    
 # Run the damn thing already
 bot.run(bot.config_token)
