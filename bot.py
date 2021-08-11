@@ -48,7 +48,7 @@ async def on_command_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.reply("Stop it. Get some perms.", mention_author=False)
 
-    return(error)
+    return error
 
 
 # Command center
@@ -145,20 +145,20 @@ async def emotize(ctx, *, message):
     """
     Converts text into discord emojis
     """
-    output = ''
-    
+    output = ""
+
     for l in message:
-        if l == ' ':
+        if l == " ":
             output += l
-        elif l == '\n':
+        elif l == "\n":
             output += l
         elif l.isdigit():
             numword = num2words(l)
-            output += f':{numword}:'
+            output += f":{numword}:"
         elif l.isalpha():
             l = l.lower()
-            output += f':regional_indicator_{l}:'
-    
+            output += f":regional_indicator_{l}:"
+
     await ctx.send(output)
 
 
@@ -167,13 +167,13 @@ async def inspire(ctx):
     """
     Uses Inspirobot to generate an inspirational quote"
     """
-    r = requests.get('https://inspirobot.me/api?generate=true')
+    r = requests.get("https://inspirobot.me/api?generate=true")
     await ctx.send(r.text)
 
 
-#@bot.command(name="pfp")
-#async def pfp(ctx, *, requested_user):
-#boring to implement, might do soon
+# @bot.command(name="pfp")
+# async def pfp(ctx, *, requested_user):
+# boring to implement, might do soon
 
 
 @bot.command(name="color")
@@ -183,13 +183,16 @@ async def color(ctx, *, hex):
     """
     try:
         color = ImageColor.getrgb(hex)
-    
-    except:
-        await ctx.reply("Valid color codes can be found here: https://pillow.readthedocs.io/en/stable/reference/ImageColor.html", mention_author=False)
 
-    img = Image.new('RGBA', (480, 480), color = color)
-    img.save('color.png')
-    await ctx.send(file = discord.File('color.png'))    
+    except:
+        await ctx.reply(
+            "Valid color codes can be found here: https://pillow.readthedocs.io/en/stable/reference/ImageColor.html",
+            mention_author=False,
+        )
+
+    img = Image.new("RGBA", (480, 480), color=color)
+    img.save("color.png")
+    await ctx.send(file=discord.File("color.png"))
 
 
 @bot.command(name="stackify")
@@ -201,6 +204,21 @@ async def stackify(ctx, count: int):
     items = count % 64
     await ctx.send(f"{count} items can fit into {stacks} stacks and {items} items.")
 
-    
+
+@bot.command(name="confess")
+async def confess(ctx, *, confession):
+    """
+    Allows Gunn students to confess pseudo-anonymously to #general in the Gunn Discord Server
+    """
+    confession_channel = bot.get_channel(710932856809193497)
+    if isinstance(ctx.channel, discord.channel.DMChannel):
+        await confession_channel.send(
+            f'A Gunn student has anonymously confessed: "{confession}"'
+        )
+        await ctx.send("Confession sent :white_check_mark:")
+    else:
+        await ctx.send("Confessions must be sent in DM's!")
+
+
 # Run the damn thing already
 bot.run(bot.config_token)
