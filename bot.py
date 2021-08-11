@@ -213,7 +213,8 @@ async def confess(ctx, *, confession):
     confession_channel = bot.get_channel(710932856809193497)
     if isinstance(ctx.channel, discord.channel.DMChannel):
         await confession_channel.send(
-            f'A Gunn student has anonymously confessed: "{confession}"'
+            f'A Gunn student has anonymously confessed: "{confession}"',
+            allowed_mentions=discord.AllowedMentions.none()
         )
         await ctx.send("Confession sent :white_check_mark:")
     else:
