@@ -51,6 +51,20 @@ async def on_command_error(ctx, error):
     return error
 
 
+# Runs something whenever a message is sent
+@bot.event
+async def on_message(message):
+
+    # Says goodnight to henry
+    henry = bot.get_user(289180942583463938)
+    goodnight_message = "gn guys!"
+
+    if message.author == henry and message.content == goodnight_message:
+        await message.channel.send("gn Henry!")
+
+    await bot.process_commands(message)
+
+
 # Command center
 @bot.command(name="test")
 async def test(ctx):
@@ -214,7 +228,7 @@ async def confess(ctx, *, confession):
     if isinstance(ctx.channel, discord.channel.DMChannel):
         await confession_channel.send(
             f'A Gunn student has anonymously confessed: "{confession}"',
-            allowed_mentions=discord.AllowedMentions.none()
+            allowed_mentions=discord.AllowedMentions.none(),
         )
         await ctx.send("Confession sent :white_check_mark:")
     else:
