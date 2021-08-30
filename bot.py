@@ -1,20 +1,22 @@
 # Libraries i may or may not use
-from utils.util import clean_code
-import discord
-from discord.ext import commands
-import logging
-from pathlib import Path
-import json
-import random
-import platform
-import io
 import contextlib
+import io
+import json
+import logging
+import math
+import platform
+import random
 import textwrap
 import traceback
-import requests
-import math
+from pathlib import Path
+
+import aiohttp
+import discord
+from discord.ext import commands
 from num2words import num2words
 from PIL import Image, ImageColor
+
+from utils.util import clean_code
 
 cwd = Path(__file__).parents[0]
 cwd = str(cwd)
@@ -27,6 +29,7 @@ intents = discord.Intents.all()
 bot = commands.Bot(command_prefix=command_prefix, intents=intents)
 bot.config_token = secrets_file["token"]
 logging.basicConfig(level=logging.INFO)
+
 
 # Are yah ready kids?
 @bot.event
@@ -179,10 +182,13 @@ async def emotize(ctx, *, message):
 @bot.command(name="inspire")
 async def inspire(ctx):
     """
-    Uses Inspirobot to generate an inspirational quote"
+    Uses InspiroBot to generate an inspirational quote"
     """
-    r = requests.get("https://inspirobot.me/api?generate=true")
-    await ctx.send(r.text)
+    async with ctx.typing():
+        async with aiohttp.ClientSession() as session:
+            async with session.get("https://inspirobot.me/api?generate=true") as resp:
+                r = await resp.text()
+    await ctx.send(r)
 
 
 # @bot.command(name="pfp")
