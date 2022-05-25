@@ -4,6 +4,7 @@ import csv
 import io
 import json
 import math
+import os
 import platform
 import random
 import textwrap
@@ -125,7 +126,8 @@ async def info(ctx):
     embed.add_field(name="Bot Creator", value="<@!595719716560175149>")
 
     embed.set_footer(text=f"As of")
-    embed.set_author(name=ctx.guild.me.display_name, icon_url=bot.user.avatar_url)
+    embed.set_author(name=ctx.guild.me.display_name,
+                     icon_url=bot.user.avatar_url)
 
     await ctx.send(embed=embed)
 
@@ -148,13 +150,15 @@ async def eval(ctx, *, code):
     """
     code = clean_code(code)
 
-    local_variables = {"discord": discord, "commands": commands, "bot": bot, "ctx": ctx}
+    local_variables = {"discord": discord,
+                       "commands": commands, "bot": bot, "ctx": ctx}
 
     stdout = io.StringIO()
 
     try:
         with contextlib.redirect_stdout(stdout):
-            exec(f"async def func():\n{textwrap.indent(code, '    ')}", local_variables)
+            exec(
+                f"async def func():\n{textwrap.indent(code, '    ')}", local_variables)
 
             obj = await local_variables["func"]()
             result = f"py\n‌{stdout.getvalue()}\n"
@@ -284,7 +288,8 @@ async def on_member_remove(member):
             color=member.color,
         )
 
-        embed.set_author(name="Member left the server", icon_url=member.avatar_url)
+        embed.set_author(name="Member left the server",
+                         icon_url=member.avatar_url)
         embed.set_footer(
             text=f"Joined: {join_date.month}/{join_date.day}/{join_date.year}"
         )
@@ -352,12 +357,27 @@ async def say(ctx, *, message):
                 f.write(tts)
 
             voice_client.play(
-                discord.FFmpegPCMAudio(executable="ffmpeg.exe", source="message.mp3")
+                discord.FFmpegPCMAudio(
+                    executable="ffmpeg.exe", source="message.mp3")
             )
             await ctx.message.add_reaction("☑️")
 
     else:
         await ctx.reply("I'm not in a voice channel right now", mention_author=False)
+
+
+@bot.command(name="perlin")
+async def perlin(ctx):
+    """
+    Generates random perlin noise
+    """
+    seed = random.randint(-128, 128)
+    os.system(f".\perlin.exe {seed}")
+
+    perlin = Image.open("perlin.ppm")
+    perlin.save("perlin.png")
+
+    await ctx.send(file=discord.File("perlin.png"))
 
 
 # Run the damn thing already
