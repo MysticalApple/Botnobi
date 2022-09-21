@@ -84,6 +84,10 @@ async def on_message(message):
         sleep(1)
         await message.channel.send("gn Henry!")
 
+    # Just because my knee hurts doesn't mean I have arthritis
+    if "ow my knee" in message.content.lower():
+        await message.reply(file=discord.File("owmyknee.png"), mention_author=False)
+
     await bot.process_commands(message)
 
 
@@ -378,6 +382,43 @@ async def perlin(ctx):
     perlin.save("perlin.png")
 
     await ctx.send(file=discord.File("perlin.png"))
+
+
+@bot.command(name="inrole")
+async def inrole(ctx, *, given_role):
+    """
+    Lists members of a given role
+    """
+    members = []
+    for member in ctx.guild.members:
+        for role in member.roles:
+            if (role.name == given_role) or (str(role.id) == given_role):
+                members.append(member.name + "#" + member.discriminator)
+
+    member_list = "\n".join(members)
+    if len(member_list) > 1990:
+        await ctx.send("```Too many members in role```")
+        return
+
+    await ctx.send("```" + member_list + "```")
+
+
+@bot.command(name="sus")
+async def sus(ctx):
+    """
+    Very Sus
+    """
+    voice_client = ctx.guild.voice_client
+
+    if voice_client:
+        voice_client.play(
+            discord.FFmpegPCMAudio(
+                executable="ffmpeg.exe", source="sus.mp3")
+        )
+        await ctx.message.add_reaction("☑️")
+
+    else:
+        await ctx.reply("I'm not in a voice channel right now", mention_author=False)
 
 
 # Run the damn thing already
