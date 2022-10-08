@@ -120,7 +120,7 @@ async def info(ctx):
     )
 
     embed.add_field(
-        name="<:github:842921746277203978>",
+        name="<:github:1022443922133360640>",
         value="[Repo](https://github.com/MysticalApple/Botnobi)",
     )
     embed.add_field(name="Python Version", value=python_version)
@@ -362,7 +362,7 @@ async def say(ctx, *, message):
 
             voice_client.play(
                 discord.FFmpegPCMAudio(
-                    executable="ffmpeg.exe", source="message.mp3")
+                    executable="ffmpeg", source="message.mp3")
             )
             await ctx.message.add_reaction("☑️")
 
@@ -376,7 +376,7 @@ async def perlin(ctx):
     Generates random perlin noise
     """
     seed = random.randint(-128, 128)
-    os.system(f".\perlin.exe {seed}")
+    os.system(f"./perlin {seed}")
 
     perlin = Image.open("perlin.ppm")
     perlin.save("perlin.png")
@@ -412,8 +412,8 @@ async def sus(ctx):
 
     if voice_client:
         voice_client.play(
-            discord.FFmpegPCMAudio(
-                executable="ffmpeg.exe", source="sus.mp3")
+            await discord.FFmpegOpusAudio.from_probe(
+                source="sus.mp3")
         )
         await ctx.message.add_reaction("☑️")
 
