@@ -246,6 +246,17 @@ async def stackify(ctx, count: int):
     await ctx.send(f"{count} items can fit into {stacks} stacks and {items} items.")
 
 
+@bot.command(name="shulkify")
+async def shulkify(ctx, count: int):
+    """
+    Converts an item count into Minecraft shulkers (and stacks)
+    """
+    shulkers = math.floor(count / 64 / 27)
+    stacks = math.floor(count / 64) % 27
+    items = count % 64
+    await ctx.send(f"{count} items can fit into {shulkers} shulkers, {stacks} stacks, and {items} items.")
+
+
 @bot.command(name="toggle")
 # Checks that user is Newlandite
 @commands.has_role(710933072664723486)
