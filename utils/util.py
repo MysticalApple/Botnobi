@@ -8,13 +8,26 @@ def clean_code(content):
     return content
 
 
-def check_toggle(feature):
+def config_get(option):
     with open("config.json", "r") as config_file:
         config = json.load(config_file)
-        return config[feature]
+        return config[option]
 
 
-def get_alerts_channel_id():
+def config_set(option, value):
     with open("config.json", "r") as config_file:
         config = json.load(config_file)
-        return config["alerts_channel_id"]
+
+    try:
+        if type(config[option]) == int:
+            config[option] = value
+
+            with open("config.json", "w") as config_file:
+                json.dump(config, config_file)
+
+        else:
+            raise
+
+    # Returns an error if the value is not a bool or if it does not exist
+    except:
+        print("config set incorrectly i think")

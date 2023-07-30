@@ -287,13 +287,27 @@ async def toggle(ctx, feature):
         await ctx.send(f"{feature} is not a valid toggleable value")
 
 
+@bot.command(name="configset")
+@commands.has_role(999078830973136977)
+async def configset(ctx, feature, value):
+    """
+    Sets any value in config.json
+    """
+    try:
+        config_set(feature, int(value))
+        await ctx.send(f"I think it worked")
+
+    except:
+        await ctx.send(f"Something went wrong")
+    
+
 # Runs code whenever someone leaves the server
 @bot.event
 async def on_member_remove(member):
     # Checks that the leaver left the correct server
-    if member.guild.id == 710932856251351111 and check_toggle("leave_log"):
+    if member.guild.id == 710932856251351111 and config_get("leave_log"):
         # Sets the channel to the one specificied in config.json
-        channel = bot.get_channel(get_alerts_channel_id())
+        channel = bot.get_channel(config_get("alerts_channel_id"))
         join_date = member.joined_at
 
         # Creates an embed with info about who left and when
