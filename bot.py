@@ -14,10 +14,11 @@ import asyncgTTS
 
 import aiohttp
 import discord
+from datetime import datetime
 from discord.ext import commands
 from num2words import num2words
 from PIL import Image, ImageColor
-from time import sleep
+from time import sleep, time
 
 from utils.util import *
 
@@ -89,6 +90,39 @@ async def on_message(message):
         await message.reply(file=discord.File("owmyknee.png"), mention_author=False)
 
     await bot.process_commands(message)
+
+
+# Reactions and stuff
+@bot.event
+async def on_reaction_add(reaction, user):
+    # Starboard
+    if reaction.emoji == "⭐" and reaction.count >= config_get("minimum_starboard_stars"):
+        starboard_messages = []
+        with open("starboard.txt", "r") as file:
+            starboard_messages = [int(message_id) for message_id in file.read().split("\n")]
+
+        m = reaction.message
+        if m.id not in starboard_messages:
+            starboard_messages.append(m.id)
+            with open("starboard.txt", "w") as file:
+                file.write("\n".join([str(message_id) for message_id in starboard_messages]))
+
+            embed = discord.Embed(
+                colour=m.author.colour,
+                description=f"{m.content}\n\n[Click for context]({m.jump_url})",
+                timestamp=datetime.now()
+            )
+
+            embed.set_author(name=m.author.display_name, icon_url=m.author.avatar_url)
+            embed.set_footer(text=f"{m.guild.name} | {m.channel.name}")
+
+            if m.attachments != [] and "image" in m.attachments[0].content_type:
+                embed.set_image(url=m.attachments[0].url)
+
+            await bot.get_channel(config_get("starboard_channel_id")).send(embed=embed)
+            
+
+
 
 
 # Command center
@@ -258,8 +292,8 @@ async def shulkify(ctx, count: int):
 
 
 @bot.command(name="toggle")
-# Checks that user is Newlandite
-@commands.has_role(710933072664723486)
+# Checks that user is Harvite
+@commands.has_role(999078830973136977)
 async def toggle(ctx, feature):
     """
     Toggles any boolean value in config.json
@@ -287,13 +321,28 @@ async def toggle(ctx, feature):
         await ctx.send(f"{feature} is not a valid toggleable value")
 
 
+@bot.command(name="configset")
+# Checks that user is Harvite
+@commands.has_role(999078830973136977)
+async def configset(ctx, feature, value):
+    """
+    Sets any value in config.json
+    """
+    try:
+        config_set(feature, int(value))
+        await ctx.send(f"I think it worked")
+
+    except:
+        await ctx.send(f"Something went wrong")
+    
+
 # Runs code whenever someone leaves the server
 @bot.event
 async def on_member_remove(member):
     # Checks that the leaver left the correct server
-    if member.guild.id == 710932856251351111 and check_toggle("leave_log"):
+    if member.guild.id == 710932856251351111 and config_get("leave_log"):
         # Sets the channel to the one specificied in config.json
-        channel = bot.get_channel(get_alerts_channel_id())
+        channel = bot.get_channel(config_get("alerts_channel_id"))
         join_date = member.joined_at
 
         # Creates an embed with info about who left and when
