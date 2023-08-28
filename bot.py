@@ -94,35 +94,35 @@ async def on_message(message):
 
 # Reactions and stuff
 @bot.event
-async def on_reaction_add(reaction, user):
+async def on_raw_reaction_add(reaction):
+    message = await bot.get_channel(reaction.channel_id).fetch_message(reaction.message_id)
+
     # Starboard
-    if reaction.emoji == "⭐" and reaction.count >= config_get("minimum_starboard_stars"):
+    star = "⭐"
+    star_count = next((r.count for r in message.reactions if r.emoji == star), 0)
+    if star_count >= config_get("minimum_starboard_stars"):
         starboard_messages = []
         with open("starboard.txt", "r") as file:
-            starboard_messages = [int(message_id) for message_id in file.read().split("\n")]
+            starboard_messages = [int(message_id) for message_id in file.read().rstrip().split("\n")]
 
-        m = reaction.message
-        if m.id not in starboard_messages:
-            starboard_messages.append(m.id)
+        if message.id not in starboard_messages:
+            starboard_messages.append(message.id)
             with open("starboard.txt", "w") as file:
                 file.write("\n".join([str(message_id) for message_id in starboard_messages]))
 
             embed = discord.Embed(
-                colour=m.author.colour,
-                description=f"{m.content}\n\n[Click for context]({m.jump_url})",
+                colour=message.author.colour,
+                description=f"{message.content}\n\n[Click for context]({message.jump_url})",
                 timestamp=datetime.now()
             )
 
-            embed.set_author(name=m.author.display_name, icon_url=m.author.avatar_url)
-            embed.set_footer(text=f"{m.guild.name} | {m.channel.name}")
+            embed.set_author(name=message.author.display_name, icon_url=message.author.avatar_url)
+            embed.set_footer(text=f"{message.guild.name} | {message.channel.name}")
 
-            if m.attachments != [] and "image" in m.attachments[0].content_type:
-                embed.set_image(url=m.attachments[0].url)
+            if message.attachments != [] and "image" in message.attachments[0].content_type:
+                embed.set_image(url=message.attachments[0].url)
 
             await bot.get_channel(config_get("starboard_channel_id")).send(embed=embed)
-            
-
-
 
 
 # Command center
