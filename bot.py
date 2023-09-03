@@ -125,6 +125,32 @@ async def on_raw_reaction_add(reaction):
             await bot.get_channel(config_get("starboard_channel_id")).send(embed=embed)
 
 
+# Runs code whenever someone leaves the server
+@bot.event
+async def on_member_remove(member):
+    # Checks that the leaver left the correct server
+    if member.guild.id == 710932856251351111 and config_get("leave_log"):
+        # Sets the channel to the one specificied in config.json
+        channel = bot.get_channel(config_get("alerts_channel_id"))
+        join_date = member.joined_at
+
+        # Creates an embed with info about who left and when
+        # Format shamelessly stolen (and slightly changed) from https://github.com/ky28059
+        embed = discord.Embed(
+            description=f"{member.mention} {member}",
+            color=member.color,
+        )
+
+        embed.set_author(name="Member left the server",
+                         icon_url=member.avatar_url)
+        embed.set_footer(
+            text=f"Joined: {join_date.month}/{join_date.day}/{join_date.year}"
+        )
+
+        # Sends it
+        await channel.send(embed=embed)
+
+
 # Command center
 @bot.command(name="test")
 async def test(ctx):
@@ -334,32 +360,6 @@ async def configset(ctx, feature, value):
 
     except:
         await ctx.send(f"Something went wrong")
-    
-
-# Runs code whenever someone leaves the server
-@bot.event
-async def on_member_remove(member):
-    # Checks that the leaver left the correct server
-    if member.guild.id == 710932856251351111 and config_get("leave_log"):
-        # Sets the channel to the one specificied in config.json
-        channel = bot.get_channel(config_get("alerts_channel_id"))
-        join_date = member.joined_at
-
-        # Creates an embed with info about who left and when
-        # Format shamelessly stolen (and slightly changed) from https://github.com/ky28059
-        embed = discord.Embed(
-            description=f"{member.mention} {member}",
-            color=member.color,
-        )
-
-        embed.set_author(name="Member left the server",
-                         icon_url=member.avatar_url)
-        embed.set_footer(
-            text=f"Joined: {join_date.month}/{join_date.day}/{join_date.year}"
-        )
-
-        # Sends it
-        await channel.send(embed=embed)
 
 
 @bot.command(name="delete")
