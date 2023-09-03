@@ -13,7 +13,7 @@ def config_set(option, value):
         config = json.load(config_file)
 
     try:
-        if type(config[option]) == int:
+        if isinstance(config[option], int):
             config[option] = value
 
             with open(config_path, "w") as config_file:

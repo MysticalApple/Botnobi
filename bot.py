@@ -33,6 +33,7 @@ intents = discord.Intents.all()
 bot = commands.Bot(command_prefix=command_prefix, intents=intents)
 bot.config_token = secrets_file["token"]
 us_words = []
+rr_file = "reaction_roles.csv"
 
 
 # Are yah ready kids?
@@ -124,9 +125,9 @@ async def on_raw_reaction_add(reaction):
 
             await bot.get_channel(config_get("starboard_channel_id")).send(embed=embed)
 
-    # Reaction Roles
+    # Reaction Roles (adding)
     reaction_roles = []
-    with open("reaction_roles.csv", "r") as csv_file:
+    with open(rr_file, "r") as csv_file:
         csv_reader = csv.DictReader(csv_file)
         for row in csv_reader:
             reaction_roles.append(row)
@@ -134,6 +135,23 @@ async def on_raw_reaction_add(reaction):
     for rr in reaction_roles:
         if message.id == int(rr["message_id"]) and str(reaction.emoji) == rr["emoji"]:
             await reaction.member.add_roles(message.guild.get_role(int(rr["role_id"])))
+
+
+@bot.event
+async def on_raw_reaction_remove(reaction):
+    message = await bot.get_channel(reaction.channel_id).fetch_message(reaction.message_id)
+    reaction.member = message.guild.get_member(reaction.user_id)
+
+    # Reaction Roles (removing)
+    reaction_roles = []
+    with open(rr_file, "r") as csv_file:
+        csv_reader = csv.DictReader(csv_file)
+        for row in csv_reader:
+            reaction_roles.append(row)
+    
+    for rr in reaction_roles:
+        if message.id == int(rr["message_id"]) and str(reaction.emoji) == rr["emoji"]:
+            await reaction.member.remove_roles(message.guild.get_role(int(rr["role_id"])))
 
 
 # Runs code whenever someone leaves the server
@@ -342,7 +360,7 @@ async def toggle(ctx, feature):
 
     # Toggles the value if it is a valid bool
     try:
-        if type(config[feature]) == bool:
+        if isinstance(config[feature], bool):
             config[feature] = not config[feature]
 
             with open("config.json", "w") as config_file:
@@ -500,7 +518,7 @@ async def reactionrole(ctx, message_id: int, emoji, role_id: int):
     """
     Adds a reaction role 
     """
-    with open("reaction_roles.csv", "a") as csv_file:
+    with open(rr_file, "a") as csv_file:
         csv.writer(csv_file).writerow([message_id, emoji, role_id])
 
     await ctx.reply("Successfully added reaction role.", mention_author=False)
