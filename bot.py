@@ -20,7 +20,7 @@ from num2words import num2words
 from PIL import Image, ImageColor
 from time import sleep, time
 
-from utils.util import *
+from utils.util import config_get, config_set, clean_code
 
 cwd = Path(__file__).parents[0]
 cwd = str(cwd)
@@ -124,6 +124,8 @@ async def on_raw_reaction_add(reaction):
 
             await bot.get_channel(config_get("starboard_channel_id")).send(embed=embed)
 
+    # Reaction Roles TODO
+
 
 # Runs code whenever someone leaves the server
 @bot.event
@@ -173,7 +175,7 @@ async def info(ctx):
     user_count = len(set(bot.get_all_members()))
 
     embed = discord.Embed(
-        title=f":information_source: Botnobi",
+        title=":information_source: Botnobi",
         description="\uFEFF",
         color=ctx.guild.me.color,
         timestamp=ctx.message.created_at,
@@ -189,7 +191,7 @@ async def info(ctx):
     embed.add_field(name="Users", value=user_count)
     embed.add_field(name="Bot Creator", value="<@!595719716560175149>")
 
-    embed.set_footer(text=f"As of")
+    embed.set_footer(text="As of")
     embed.set_author(name=ctx.guild.me.display_name,
                      icon_url=bot.user.avatar_url)
 
@@ -224,7 +226,7 @@ async def eval(ctx, *, code):
             exec(
                 f"async def func():\n{textwrap.indent(code, '    ')}", local_variables)
 
-            obj = await local_variables["func"]()
+            await local_variables["func"]()
             result = f"py\n‌{stdout.getvalue()}\n"
 
     except Exception as e:
@@ -285,7 +287,7 @@ async def color(ctx, *, hex):
     try:
         color = ImageColor.getrgb(hex)
 
-    except:
+    except Exception:
         await ctx.reply(
             "Valid color codes can be found here: https://pillow.readthedocs.io/en/stable/reference/ImageColor.html",
             mention_author=False,
@@ -340,10 +342,10 @@ async def toggle(ctx, feature):
             await ctx.send(f"{feature} has been toggled to {config[feature]}")
 
         else:
-            raise
+            raise ValueError
 
     # Returns an error if the value is not a bool or if it does not exist
-    except:
+    except Exception:
         await ctx.send(f"{feature} is not a valid toggleable value")
 
 
@@ -356,10 +358,10 @@ async def configset(ctx, feature, value):
     """
     try:
         config_set(feature, int(value))
-        await ctx.send(f"I think it worked")
+        await ctx.send("I think it worked")
 
-    except:
-        await ctx.send(f"Something went wrong")
+    except Exception:
+        await ctx.send("Something went wrong")
 
 
 @bot.command(name="delete")
@@ -389,6 +391,7 @@ async def join(ctx):
         )
         await ctx.message.add_reaction("⏫")
 
+not_in_voice = "I'm not in a voice channel right now"
 
 @bot.command(name="leave")
 async def leave(ctx):
@@ -402,7 +405,7 @@ async def leave(ctx):
         await ctx.message.add_reaction("⏬")
 
     else:
-        await ctx.reply("I'm not in a voice channel right now", mention_author=False)
+        await ctx.reply(not_in_voice, mention_author=False)
 
 
 @bot.command(name="say")
@@ -427,7 +430,25 @@ async def say(ctx, *, message):
             await ctx.message.add_reaction("☑️")
 
     else:
-        await ctx.reply("I'm not in a voice channel right now", mention_author=False)
+        await ctx.reply(not_in_voice, mention_author=False)
+
+
+@bot.command(name="sus")
+async def sus(ctx):
+    """
+    Very Sus
+    """
+    voice_client = ctx.guild.voice_client
+
+    if voice_client:
+        voice_client.play(
+            await discord.FFmpegOpusAudio.from_probe(
+                source="sus.mp3")
+        )
+        await ctx.message.add_reaction("☑️")
+
+    else:
+        await ctx.reply(not_in_voice, mention_author=False)
 
 
 @bot.command(name="perlin")
@@ -461,24 +482,6 @@ async def inrole(ctx, *, given_role):
         return
 
     await ctx.send("```" + member_list + "```")
-
-
-@bot.command(name="sus")
-async def sus(ctx):
-    """
-    Very Sus
-    """
-    voice_client = ctx.guild.voice_client
-
-    if voice_client:
-        voice_client.play(
-            await discord.FFmpegOpusAudio.from_probe(
-                source="sus.mp3")
-        )
-        await ctx.message.add_reaction("☑️")
-
-    else:
-        await ctx.reply("I'm not in a voice channel right now", mention_author=False)
 
 
 # Run the damn thing already
