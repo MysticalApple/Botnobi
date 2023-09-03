@@ -100,7 +100,7 @@ async def on_raw_reaction_add(reaction):
     # Starboard
     star = "⭐"
     star_count = next((r.count for r in message.reactions if r.emoji == star), 0)
-    if star_count >= config_get("minimum_starboard_stars"):
+    if star_count >= config_get("minimum_starboard_stars") and message.guild.id == 710932856251351111:
         starboard_messages = []
         with open("starboard.txt", "r") as file:
             starboard_messages = [int(message_id) for message_id in file.read().rstrip().split("\n")]
