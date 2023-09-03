@@ -124,7 +124,16 @@ async def on_raw_reaction_add(reaction):
 
             await bot.get_channel(config_get("starboard_channel_id")).send(embed=embed)
 
-    # Reaction Roles TODO
+    # Reaction Roles
+    reaction_roles = []
+    with open("reaction_roles.csv", "r") as csv_file:
+        csv_reader = csv.DictReader(csv_file)
+        for row in csv_reader:
+            reaction_roles.append(row)
+    
+    for rr in reaction_roles:
+        if message.id == int(rr["message_id"]) and str(reaction.emoji) == rr["emoji"]:
+            await reaction.member.add_roles(message.guild.get_role(int(rr["role_id"])))
 
 
 # Runs code whenever someone leaves the server
@@ -483,6 +492,19 @@ async def inrole(ctx, *, given_role):
 
     await ctx.send("```" + member_list + "```")
 
+
+@bot.command(name="reactionrole")
+# Checks that user is Harvite
+@commands.has_role(999078830973136977)
+async def reactionrole(ctx, message_id: int, emoji, role_id: int):
+    """
+    Adds a reaction role 
+    """
+    with open("reaction_roles.csv", "a") as csv_file:
+        csv.writer(csv_file).writerow([message_id, emoji, role_id])
+
+    await ctx.reply("Successfully added reaction role.", mention_author=False)
+    
 
 # Run the damn thing already
 bot.run(bot.config_token)
