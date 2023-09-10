@@ -7,6 +7,7 @@ import math
 import os
 import platform
 import random
+import re
 import textwrap
 import traceback
 from pathlib import Path
@@ -14,8 +15,9 @@ import asyncgTTS
 
 import aiohttp
 import discord
-from datetime import datetime
-from discord.ext import commands
+from datetime import datetime, timezone
+from discord.ext import commands, tasks
+import feedparser
 from num2words import num2words
 from PIL import Image, ImageColor
 from time import sleep, time
@@ -34,6 +36,7 @@ bot = commands.Bot(command_prefix=command_prefix, intents=intents)
 bot.config_token = secrets_file["token"]
 us_words = []
 rr_file = "reaction_roles.csv"
+commit_feeds_file = "commitfeeds.txt"
 
 
 # Are yah ready kids?
@@ -49,6 +52,8 @@ async def on_ready():
             us_words.append(row[0])
 
     await bot.change_presence(activity=discord.Game(name="Undergoing Renovations"))
+
+    update_commit_feed.start()
 
 
 # Errors are not pog
@@ -178,6 +183,73 @@ async def on_member_remove(member):
 
         # Sends it
         await channel.send(embed=embed)
+
+
+# Github commit feeds
+def get_feeds_from_file(file):
+    """
+    Reads in a list of tracked feeds
+    """
+    feeds = []
+    with open(file, "r") as feeds_file:
+        for entry in feeds_file.read().strip().split("\n"):
+            feed = {"link": entry.split(" ")[0], 
+                    "commits": entry.split(" ")[1:]}
+            feeds.append(feed)
+
+    return feeds
+
+def write_feeds_to_file(file, feeds):
+    """
+    Writes a list of tracked feeds to a text file
+    """
+    with open(file, "w") as feeds_file:
+        for feed in feeds:
+            feeds_file.write(f"{feed['link']} {' '.join(feed['commits'])}\n")
+
+@tasks.loop(minutes=3)
+async def update_commit_feed():
+    print("running...")
+    feeds = get_feeds_from_file(commit_feeds_file)
+
+    for feed in feeds:
+        # Ignore old commits
+        d = feedparser.parse(feed["link"])
+        new_commits = [commit for commit in d.entries if commit.id not in feed["commits"]]
+        feed["commits"].extend([commit.id for commit in new_commits])
+        if not new_commits:
+            continue
+
+        # Prepare embed for sending (format stolen from https://github.com/Obi-Wan3/OB13-Cogs/blob/main/github/github.py)
+        channel = bot.get_channel(config_get("commits_channel_id"))
+
+        count = len(new_commits)
+
+        repo = d.feed.id.split("/")[-3]
+        branch = d.feed.id.split("/")[-1]
+
+        desc = ""
+        for commit in new_commits:
+            desc += f"[`{commit.link.split('/')[-1][:7]}`]({commit.link}) {commit.title} -- {commit.author}\n"
+
+        embed = discord.Embed(
+                title=f"[{repo}:{branch}] {count} new commit{'s' if count > 1 else ''}",
+                color=channel.guild.get_member(bot.user.id).color,
+                description=desc,
+                url=feed["link"][:-5] if count > 1 else commit.link
+            )
+        
+        embed.timestamp = datetime.strptime(new_commits[0].updated, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+
+        embed.set_author(
+            name=new_commits[0].author,
+            url=f"https://github.com/{new_commits[0].author}",
+            icon_url=new_commits[0].media_thumbnail[0]["url"]
+        )
+
+        await channel.send(embed=embed)
+
+    write_feeds_to_file(commit_feeds_file, feeds)
 
 
 # Command center
@@ -524,5 +596,27 @@ async def reactionrole(ctx, message_id: int, emoji, role_id: int):
     await ctx.reply("Successfully added reaction role.", mention_author=False)
     
 
-# Run the damn thing already
+@bot.command(name="addrepo")
+async def addrepo(ctx, link):
+    """
+    Adds a github repository to be tracked for commits
+    """
+    github_repo_pattern = r'^https?://github\.com/[\w-]+/[\w-]+/$'
+    if not re.match(github_repo_pattern, link):
+        await ctx.reply("That's not a valid GitHub repository link!")
+        return
+
+    feeds = get_feeds_from_file(commit_feeds_file)
+
+    d = feedparser.parse(link + "commits.atom")
+    commit_ids = [commit.id for commit in d.entries]
+    
+    new_feed = {"link": link + 'commits.atom', "commits": commit_ids}
+    feeds.append(new_feed)
+
+    write_feeds_to_file(commit_feeds_file, feeds)
+
+    await ctx.reply("Added!")
+
+
 bot.run(bot.config_token)
