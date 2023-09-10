@@ -209,7 +209,6 @@ def write_feeds_to_file(file, feeds):
 
 @tasks.loop(minutes=3)
 async def update_commit_feed():
-    print("running...")
     feeds = get_feeds_from_file(commit_feeds_file)
 
     for feed in feeds:
