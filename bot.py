@@ -122,7 +122,7 @@ async def on_raw_reaction_add(reaction):
                 timestamp=datetime.now()
             )
 
-            embed.set_author(name=message.author.display_name, icon_url=message.author.avatar_url)
+            embed.set_author(name=message.author.display_name, icon_url=message.author.avatar)
             embed.set_footer(text=f"{message.guild.name} | {message.channel.name}")
 
             if message.attachments != [] and "image" in message.attachments[0].content_type:
@@ -176,7 +176,7 @@ async def on_member_remove(member):
         )
 
         embed.set_author(name="Member left the server",
-                         icon_url=member.avatar_url)
+                         icon_url=member.avatar)
         embed.set_footer(
             text=f"Joined: {join_date.month}/{join_date.day}/{join_date.year}"
         )
@@ -291,7 +291,7 @@ async def info(ctx):
 
     embed.set_footer(text="As of")
     embed.set_author(name=ctx.guild.me.display_name,
-                     icon_url=bot.user.avatar_url)
+                     icon_url=bot.user.avatar)
 
     await ctx.send(embed=embed)
 
@@ -572,7 +572,7 @@ async def inrole(ctx, *, given_role):
     for member in ctx.guild.members:
         for role in member.roles:
             if (role.name == given_role) or (str(role.id) == given_role):
-                members.append(member.name + "#" + member.discriminator)
+                members.append(member.name)
 
     member_list = "\n".join(members)
     if len(member_list) > 1990:
