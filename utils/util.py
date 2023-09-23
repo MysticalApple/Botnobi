@@ -2,6 +2,7 @@ import json
 
 config_path = "config.json"
 
+
 # Configs
 def config_get(option):
     with open(config_path, "r") as config_file:
@@ -36,11 +37,11 @@ def get_feeds_from_file(file):
     feeds = []
     with open(file, "r") as feeds_file:
         for entry in feeds_file.read().strip().split("\n"):
-            feed = {"link": entry.split(" ")[0], 
-                    "commits": entry.split(" ")[1:]}
+            feed = {"link": entry.split(" ")[0], "commits": entry.split(" ")[1:]}
             feeds.append(feed)
 
     return feeds
+
 
 def write_feeds_to_file(file, feeds):
     """
