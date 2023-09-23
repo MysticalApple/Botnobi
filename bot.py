@@ -18,6 +18,8 @@ import discord
 from datetime import datetime, timezone
 from discord.ext import commands, tasks
 import feedparser
+from fuzzywuzzy import fuzz
+import gspread
 from num2words import num2words
 from PIL import Image, ImageColor
 from time import sleep, time
@@ -43,6 +45,8 @@ bot.config_token = secrets_file["token"]
 us_words = []
 rr_file = "reaction_roles.csv"
 commit_feeds_file = "commitfeeds.txt"
+google_creds_file = "google_credentials.json"
+verification_data = []
 
 
 # Are yah ready kids?
@@ -60,6 +64,7 @@ async def on_ready():
     await bot.change_presence(activity=discord.Game(name="Undergoing Renovations"))
 
     update_commit_feed.start()
+    fetch_verification_data_from_sheet.start()
 
 
 # Errors are not pog
@@ -255,6 +260,17 @@ async def update_commit_feed():
         await channel.send(embed=embed)
 
     write_feeds_to_file(commit_feeds_file, feeds)
+
+
+# Verification sheet
+@tasks.loop(minutes=10)
+async def fetch_verification_data_from_sheet():
+    global verification_data
+
+    gc = gspread.service_account(filename=google_creds_file)
+    gsheet = gc.open_by_url(config_get("verification_sheet_url"))
+
+    verification_data = gsheet.sheet1.get_all_records()
 
 
 # Command center
@@ -545,6 +561,136 @@ async def addrepo(ctx, link):
     write_feeds_to_file(commit_feeds_file, feeds)
 
     await ctx.reply("Added!")
+
+
+# Send embed with user verification info
+async def send_verification_info_embed(ctx, search, members, exact):
+    # Top Result
+    person = members[0]
+    user = await bot.fetch_user(person["UUID (do NOT change)"])
+
+    embed = discord.Embed(
+        colour=discord.Colour.brand_red(),
+        title=f"{config_get('school_name')} Server User Info (`{ctx.message.content.split(' ')[0]}`)",
+        description=f"Information about {user.mention}",
+    )
+    embed.set_footer(
+        text="Keep in mind b:whois searches usernames, while b:iswhom searches real names."
+    )
+
+    embed.add_field(inline=True, name="Year", value=person["Graduation Year"])
+    embed.add_field(
+        inline=True, name="Name", value=person["First Name"] + " " + person["Last Name"]
+    )
+    embed.add_field(inline=True, name="School", value=person["School"])
+    embed.add_field(inline=True, name="Discord", value=user.name)
+    embed.add_field(
+        inline=True,
+        name="Joined",
+        value=f"<t:{int(datetime.strptime(person['Timestamp'], '%m/%d/%Y %H:%M:%S').replace(tzinfo=timezone.utc).timestamp())}:D>",
+    )
+    embed.add_field(
+        inline=True,
+        name="Status",
+        value="Present" if ctx.guild.get_member(user.id) else "Absent",
+    )
+
+    if not exact:
+        # Display shortened versions of next five matches' info
+        shortened_results = [
+            f"{person['match_score']}%: {person['Graduation Year']} {person['First Name']} {person['Last Name']} <@{person['UUID (do NOT change)']}>"
+            for person in members
+        ]
+        other_results = "\n".join(shortened_results[1:6])
+        embed.add_field(
+            inline=False,
+            name=f"Fuzzy Search Results for: `{search}`",
+            value=f"The top result was {person['match_score']}% similar. Other results:\n{other_results}",
+        )
+
+    await ctx.send(embed=embed, allowed_mentions=None)
+
+
+@bot.command(name="whois")
+async def whois(ctx, *, search):
+    """
+    Search by discord name for a verified server member.
+    """
+    # Command should only work in the intended guild
+    if ctx.guild.id != 710932856251351111:
+        return
+
+    # Use a copy of the verification data
+    members = verification_data
+
+    # Exact search by id
+    pattern = r"<@\d+>"
+    if re.match(pattern, search):
+        search = search[2:-1]
+
+    try:
+        user_id = int(search)
+
+        members = [
+            member
+            for member in verification_data
+            if member["UUID (do NOT change)"] == user_id
+        ]
+
+        if not members:
+            await ctx.reply("No person with that ID was found.", mention_author=False)
+            return
+
+        await send_verification_info_embed(ctx, search, members, True)
+        return
+
+    except ValueError:
+        pass
+
+    # Get highest fuzzy search (tokenized) score across different possible discord names for each verified person
+    for member in members:
+        user = await bot.fetch_user(member["UUID (do NOT change)"])
+
+        match_score = fuzz.token_sort_ratio(search, user.name)
+        match_score = max(
+            [match_score, fuzz.token_sort_ratio(search, user.global_name)]
+        )
+        if ctx.guild.get_member(user.id):
+            match_score = max(
+                [match_score, fuzz.token_sort_ratio(search, user.display_name)]
+            )
+
+        member["match_score"] = match_score
+
+    members = sorted(members, key=lambda m: m["match_score"], reverse=True)
+
+    await send_verification_info_embed(
+        ctx, search, members, members[0]["match_score"] >= 95
+    )
+
+
+@bot.command(name="iswhom")
+async def iswhom(ctx, *, search):
+    """
+    Search by real name for a verified server member.
+    """
+    # Command should only work in the intended guild
+    if ctx.guild.id != 710932856251351111:
+        return
+
+    # Get fuzzy search (substring) score for each verified person
+    members = verification_data
+    for member in members:
+        match_score = fuzz.partial_ratio(
+            search, member["First Name"] + " " + member["Last Name"]
+        )
+        member["match_score"] = match_score
+
+    members = sorted(members, key=lambda m: m["match_score"], reverse=True)
+
+    await send_verification_info_embed(
+        ctx, search, members, members[0]["match_score"] >= 95
+    )
 
 
 bot.run(bot.config_token)

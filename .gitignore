@@ -14,3 +14,4 @@ starboard.txt
 utils/__pycache__
 reaction_roles.csv
 commitfeeds.txt
+google_credentials.json
