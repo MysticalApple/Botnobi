@@ -22,7 +22,13 @@ from num2words import num2words
 from PIL import Image, ImageColor
 from time import sleep, time
 
-from utils.util import config_get, config_set, clean_code
+from utils.util import (
+    config_get,
+    config_set,
+    get_feeds_from_file,
+    write_feeds_to_file,
+    clean_code,
+)
 
 cwd = Path(__file__).parents[0]
 cwd = str(cwd)
@@ -101,31 +107,45 @@ async def on_message(message):
 # Reactions and stuff
 @bot.event
 async def on_raw_reaction_add(reaction):
-    message = await bot.get_channel(reaction.channel_id).fetch_message(reaction.message_id)
+    message = await bot.get_channel(reaction.channel_id).fetch_message(
+        reaction.message_id
+    )
 
     # Starboard
     star = "⭐"
     star_count = next((r.count for r in message.reactions if r.emoji == star), 0)
-    if star_count >= config_get("minimum_starboard_stars") and message.guild.id == 710932856251351111:
+    if (
+        star_count >= config_get("minimum_starboard_stars")
+        and message.guild.id == 710932856251351111
+    ):
         starboard_messages = []
         with open("starboard.txt", "r") as file:
-            starboard_messages = [int(message_id) for message_id in file.read().rstrip().split("\n")]
+            starboard_messages = [
+                int(message_id) for message_id in file.read().rstrip().split("\n")
+            ]
 
         if message.id not in starboard_messages:
             starboard_messages.append(message.id)
             with open("starboard.txt", "w") as file:
-                file.write("\n".join([str(message_id) for message_id in starboard_messages]))
+                file.write(
+                    "\n".join([str(message_id) for message_id in starboard_messages])
+                )
 
             embed = discord.Embed(
                 colour=message.author.colour,
                 description=f"{message.content}\n\n[Click for context]({message.jump_url})",
-                timestamp=datetime.now()
+                timestamp=datetime.now(),
             )
 
-            embed.set_author(name=message.author.display_name, icon_url=message.author.avatar_url)
+            embed.set_author(
+                name=message.author.display_name, icon_url=message.author.avatar
+            )
             embed.set_footer(text=f"{message.guild.name} | {message.channel.name}")
 
-            if message.attachments != [] and "image" in message.attachments[0].content_type:
+            if (
+                message.attachments != []
+                and "image" in message.attachments[0].content_type
+            ):
                 embed.set_image(url=message.attachments[0].url)
 
             await bot.get_channel(config_get("starboard_channel_id")).send(embed=embed)
@@ -136,7 +156,7 @@ async def on_raw_reaction_add(reaction):
         csv_reader = csv.DictReader(csv_file)
         for row in csv_reader:
             reaction_roles.append(row)
-    
+
     for rr in reaction_roles:
         if message.id == int(rr["message_id"]) and str(reaction.emoji) == rr["emoji"]:
             await reaction.member.add_roles(message.guild.get_role(int(rr["role_id"])))
@@ -144,7 +164,9 @@ async def on_raw_reaction_add(reaction):
 
 @bot.event
 async def on_raw_reaction_remove(reaction):
-    message = await bot.get_channel(reaction.channel_id).fetch_message(reaction.message_id)
+    message = await bot.get_channel(reaction.channel_id).fetch_message(
+        reaction.message_id
+    )
     reaction.member = message.guild.get_member(reaction.user_id)
 
     # Reaction Roles (removing)
@@ -153,10 +175,12 @@ async def on_raw_reaction_remove(reaction):
         csv_reader = csv.DictReader(csv_file)
         for row in csv_reader:
             reaction_roles.append(row)
-    
+
     for rr in reaction_roles:
         if message.id == int(rr["message_id"]) and str(reaction.emoji) == rr["emoji"]:
-            await reaction.member.remove_roles(message.guild.get_role(int(rr["role_id"])))
+            await reaction.member.remove_roles(
+                message.guild.get_role(int(rr["role_id"]))
+            )
 
 
 # Runs code whenever someone leaves the server
@@ -175,8 +199,7 @@ async def on_member_remove(member):
             color=member.color,
         )
 
-        embed.set_author(name="Member left the server",
-                         icon_url=member.avatar_url)
+        embed.set_author(name="Member left the server", icon_url=member.avatar)
         embed.set_footer(
             text=f"Joined: {join_date.month}/{join_date.day}/{join_date.year}"
         )
@@ -186,27 +209,6 @@ async def on_member_remove(member):
 
 
 # Github commit feeds
-def get_feeds_from_file(file):
-    """
-    Reads in a list of tracked feeds
-    """
-    feeds = []
-    with open(file, "r") as feeds_file:
-        for entry in feeds_file.read().strip().split("\n"):
-            feed = {"link": entry.split(" ")[0], 
-                    "commits": entry.split(" ")[1:]}
-            feeds.append(feed)
-
-    return feeds
-
-def write_feeds_to_file(file, feeds):
-    """
-    Writes a list of tracked feeds to a text file
-    """
-    with open(file, "w") as feeds_file:
-        for feed in feeds:
-            feeds_file.write(f"{feed['link']} {' '.join(feed['commits'])}\n")
-
 @tasks.loop(minutes=3)
 async def update_commit_feed():
     feeds = get_feeds_from_file(commit_feeds_file)
@@ -214,7 +216,9 @@ async def update_commit_feed():
     for feed in feeds:
         # Ignore old commits
         d = feedparser.parse(feed["link"])
-        new_commits = [commit for commit in d.entries if commit.id not in feed["commits"]]
+        new_commits = [
+            commit for commit in d.entries if commit.id not in feed["commits"]
+        ]
         feed["commits"].extend([commit.id for commit in new_commits])
         if not new_commits:
             continue
@@ -232,18 +236,20 @@ async def update_commit_feed():
             desc += f"[`{commit.link.split('/')[-1][:7]}`]({commit.link}) {commit.title} -- {commit.author}\n"
 
         embed = discord.Embed(
-                title=f"[{repo}:{branch}] {count} new commit{'s' if count > 1 else ''}",
-                color=channel.guild.get_member(bot.user.id).color,
-                description=desc,
-                url=feed["link"][:-5] if count > 1 else commit.link
-            )
-        
-        embed.timestamp = datetime.strptime(new_commits[0].updated, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+            title=f"[{repo}:{branch}] {count} new commit{'s' if count > 1 else ''}",
+            color=channel.guild.get_member(bot.user.id).color,
+            description=desc,
+            url=feed["link"][:-5] if count > 1 else commit.link,
+        )
+
+        embed.timestamp = datetime.strptime(
+            new_commits[0].updated, "%Y-%m-%dT%H:%M:%SZ"
+        ).replace(tzinfo=timezone.utc)
 
         embed.set_author(
             name=new_commits[0].author,
             url=f"https://github.com/{new_commits[0].author}",
-            icon_url=new_commits[0].media_thumbnail[0]["url"]
+            icon_url=new_commits[0].media_thumbnail[0]["url"],
         )
 
         await channel.send(embed=embed)
@@ -290,8 +296,7 @@ async def info(ctx):
     embed.add_field(name="Bot Creator", value="<@!595719716560175149>")
 
     embed.set_footer(text="As of")
-    embed.set_author(name=ctx.guild.me.display_name,
-                     icon_url=bot.user.avatar_url)
+    embed.set_author(name=ctx.guild.me.display_name, icon_url=bot.user.avatar)
 
     await ctx.send(embed=embed)
 
@@ -314,15 +319,13 @@ async def eval(ctx, *, code):
     """
     code = clean_code(code)
 
-    local_variables = {"discord": discord,
-                       "commands": commands, "bot": bot, "ctx": ctx}
+    local_variables = {"discord": discord, "commands": commands, "bot": bot, "ctx": ctx}
 
     stdout = io.StringIO()
 
     try:
         with contextlib.redirect_stdout(stdout):
-            exec(
-                f"async def func():\n{textwrap.indent(code, '    ')}", local_variables)
+            exec(f"async def func():\n{textwrap.indent(code, '    ')}", local_variables)
 
             await local_variables["func"]()
             result = f"py\n‌{stdout.getvalue()}\n"
@@ -414,7 +417,9 @@ async def shulkify(ctx, count: int):
     shulkers = math.floor(count / 64 / 27)
     stacks = math.floor(count / 64) % 27
     items = count % 64
-    await ctx.send(f"{count} items can fit into {shulkers} shulkers, {stacks} stacks, and {items} items.")
+    await ctx.send(
+        f"{count} items can fit into {shulkers} shulkers, {stacks} stacks, and {items} items."
+    )
 
 
 @bot.command(name="toggle")
@@ -473,82 +478,6 @@ async def delete(ctx, channel_id: int, message_id: int):
     await message.delete()
 
 
-@bot.command(name="join")
-async def join(ctx):
-    """
-    Joins the voice channel that the user is in
-    """
-    if not ctx.message.author.voice:
-        await ctx.reply("You should join a voice channel first", mention_author=False)
-
-    else:
-        channel = ctx.author.voice.channel
-        await channel.connect()
-        await ctx.guild.change_voice_state(
-            channel=channel, self_mute=False, self_deaf=True
-        )
-        await ctx.message.add_reaction("⏫")
-
-not_in_voice = "I'm not in a voice channel right now"
-
-@bot.command(name="leave")
-async def leave(ctx):
-    """
-    Leaves the voice channel that it is currently in
-    """
-    voice_client = ctx.guild.voice_client
-
-    if voice_client:
-        await voice_client.disconnect()
-        await ctx.message.add_reaction("⏬")
-
-    else:
-        await ctx.reply(not_in_voice, mention_author=False)
-
-
-@bot.command(name="say")
-async def say(ctx, *, message):
-    """
-    Uses google text to speech to say something in a voice channel
-    """
-    voice_client = ctx.guild.voice_client
-
-    if voice_client:
-        async with aiohttp.ClientSession() as session:
-            gtts = await asyncgTTS.setup(premium=False, session=session)
-            tts = await gtts.get(text=message)
-
-            with open("message.mp3", "wb") as f:
-                f.write(tts)
-
-            voice_client.play(
-                discord.FFmpegPCMAudio(
-                    executable="ffmpeg", source="message.mp3")
-            )
-            await ctx.message.add_reaction("☑️")
-
-    else:
-        await ctx.reply(not_in_voice, mention_author=False)
-
-
-@bot.command(name="sus")
-async def sus(ctx):
-    """
-    Very Sus
-    """
-    voice_client = ctx.guild.voice_client
-
-    if voice_client:
-        voice_client.play(
-            await discord.FFmpegOpusAudio.from_probe(
-                source="sus.mp3")
-        )
-        await ctx.message.add_reaction("☑️")
-
-    else:
-        await ctx.reply(not_in_voice, mention_author=False)
-
-
 @bot.command(name="perlin")
 async def perlin(ctx):
     """
@@ -572,7 +501,7 @@ async def inrole(ctx, *, given_role):
     for member in ctx.guild.members:
         for role in member.roles:
             if (role.name == given_role) or (str(role.id) == given_role):
-                members.append(member.name + "#" + member.discriminator)
+                members.append(member.name)
 
     member_list = "\n".join(members)
     if len(member_list) > 1990:
@@ -587,20 +516,20 @@ async def inrole(ctx, *, given_role):
 @commands.has_role(999078830973136977)
 async def reactionrole(ctx, message_id: int, emoji, role_id: int):
     """
-    Adds a reaction role 
+    Adds a reaction role
     """
     with open(rr_file, "a") as csv_file:
         csv.writer(csv_file).writerow([message_id, emoji, role_id])
 
     await ctx.reply("Successfully added reaction role.", mention_author=False)
-    
+
 
 @bot.command(name="addrepo")
 async def addrepo(ctx, link):
     """
     Adds a github repository to be tracked for commits
     """
-    github_repo_pattern = r'^https?://github\.com/[\w-]+/[\w-]+/$'
+    github_repo_pattern = r"^https?://github\.com/[\w-]+/[\w-]+/$"
     if not re.match(github_repo_pattern, link):
         await ctx.reply("That's not a valid GitHub repository link!")
         return
@@ -609,8 +538,8 @@ async def addrepo(ctx, link):
 
     d = feedparser.parse(link + "commits.atom")
     commit_ids = [commit.id for commit in d.entries]
-    
-    new_feed = {"link": link + 'commits.atom', "commits": commit_ids}
+
+    new_feed = {"link": link + "commits.atom", "commits": commit_ids}
     feeds.append(new_feed)
 
     write_feeds_to_file(commit_feeds_file, feeds)
