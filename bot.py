@@ -22,7 +22,7 @@ from num2words import num2words
 from PIL import Image, ImageColor
 from time import sleep, time
 
-from utils.util import config_get, config_set, clean_code
+from utils.util import config_get, config_set, get_feeds_from_file, write_feeds_to_file, clean_code
 
 cwd = Path(__file__).parents[0]
 cwd = str(cwd)
@@ -186,27 +186,6 @@ async def on_member_remove(member):
 
 
 # Github commit feeds
-def get_feeds_from_file(file):
-    """
-    Reads in a list of tracked feeds
-    """
-    feeds = []
-    with open(file, "r") as feeds_file:
-        for entry in feeds_file.read().strip().split("\n"):
-            feed = {"link": entry.split(" ")[0], 
-                    "commits": entry.split(" ")[1:]}
-            feeds.append(feed)
-
-    return feeds
-
-def write_feeds_to_file(file, feeds):
-    """
-    Writes a list of tracked feeds to a text file
-    """
-    with open(file, "w") as feeds_file:
-        for feed in feeds:
-            feeds_file.write(f"{feed['link']} {' '.join(feed['commits'])}\n")
-
 @tasks.loop(minutes=3)
 async def update_commit_feed():
     feeds = get_feeds_from_file(commit_feeds_file)
