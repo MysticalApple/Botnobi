@@ -694,9 +694,7 @@ async def iswhom(ctx, *, search):
 
     members = sorted(members, key=lambda m: m["match_score"], reverse=True)
 
-    await send_verification_info_embed(
-        ctx, search, members, members[0]["match_score"] >= 95
-    )
+    await send_verification_info_embed(ctx, search, members, False)
 
 
 bot.run(bot.config_token)
