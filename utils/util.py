@@ -15,7 +15,13 @@ def config_set(option, value):
         config = json.load(config_file)
 
     try:
-        if isinstance(config[option], int):
+        value = int(value)
+
+    except ValueError:
+        pass
+
+    try:
+        if type(config[option]) == type(value):
             config[option] = value
 
             with open(config_path, "w") as config_file:
@@ -25,8 +31,8 @@ def config_set(option, value):
             raise ValueError
 
     # Returns an error if the value is not a bool or if it does not exist
-    except Exception:
-        print("config set incorrectly i think")
+    except Exception as e:
+        print(e)
 
 
 # Github Feed List

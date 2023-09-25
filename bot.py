@@ -479,7 +479,7 @@ async def configset(ctx, feature, value):
     Sets any value in config.json
     """
     try:
-        config_set(feature, int(value))
+        config_set(feature, value)
         await ctx.send("I think it worked")
 
     except Exception:
