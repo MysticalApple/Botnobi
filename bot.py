@@ -272,6 +272,9 @@ async def fetch_verification_data_from_sheet():
 
     verification_data = gsheet.sheet1.get_all_records()
 
+    for entry in verification_data:
+        entry["user"] = await bot.fetch_user(entry["UUID (do NOT change)"])
+
 
 # Command center
 @bot.command(name="test")
@@ -649,15 +652,18 @@ async def whois(ctx, *, search):
 
     # Get highest fuzzy search (tokenized) score across different possible discord names for each verified person
     for member in members:
-        user = await bot.fetch_user(member["UUID (do NOT change)"])
+        user = member["user"]
 
         match_score = fuzz.token_sort_ratio(search, user.name)
         match_score = max(
             [match_score, fuzz.token_sort_ratio(search, user.global_name)]
         )
-        if ctx.guild.get_member(user.id):
+
+        # Display name only applies if member is still in server
+        server_member = ctx.guild.get_member(user.id)
+        if server_member:
             match_score = max(
-                [match_score, fuzz.token_sort_ratio(search, user.display_name)]
+                [match_score, fuzz.token_sort_ratio(search, server_member.display_name)]
             )
 
         member["match_score"] = match_score
