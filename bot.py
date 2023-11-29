@@ -527,7 +527,7 @@ async def inrole(ctx, *, given_role):
         await ctx.send("```Too many members in role```")
         return
 
-    await ctx.send("```" + member_list + "```")
+    await ctx.send("```\n" + member_list + "```")
 
 
 @bot.command(name="reactionrole")
