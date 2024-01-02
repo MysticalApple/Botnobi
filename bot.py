@@ -139,7 +139,7 @@ async def on_raw_reaction_add(reaction):
             embed = discord.Embed(
                 colour=message.author.colour,
                 description=f"{message.content}\n\n[Click for context]({message.jump_url})",
-                timestamp=datetime.now(),
+                timestamp=message.created_at,
             )
 
             embed.set_author(
