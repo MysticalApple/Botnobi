@@ -533,7 +533,7 @@ async def whois(ctx, *args):
         sqlPointer.execute("UPDATE whois SET name = ?, discord_name = ?, school = ?, status = ?, year = ?, join_date "
                            "= ? WHERE user_id = ?", user_info)
         sqlConnection.commit()
-        await ctx.send("You are already in the database, updating your info")
+        await ctx.send("You are already in the database, updated your info")
         return
     await ctx.send("Adding your info.")
     sqlPointer.execute("INSERT INTO whois (name, discord_name, school, status, year, join_date, user_id) VALUES (?,?,"
@@ -543,17 +543,27 @@ async def whois(ctx, *args):
 
 
 @bot.command(name="whois")
-async def whois(ctx, *, search):
+# TODO: allow key value search
+# TODO: show multiple results
+# TODO: fuzzy search
+async def whois(ctx, *search):
     sqlPointer.execute("SELECT * FROM whois WHERE discord_name LIKE ?", ['%' + search[0] + '%'])
-    if sqlPointer.fetchone() is None:
-        # TODO: Implement fuzzy search
+    result = sqlPointer.fetchone()
+    if result is None:
+        await ctx.send("No results found")
         return
-    await ctx.send(sqlPointer.fetchall())
+    await ctx.send(result)
 
 
 @bot.command(name="iswhom")
-async def iswhom(ctx, *, search):
-    await ctx.send("Working")
+async def iswhom(ctx, *search):
+    sqlPointer.execute("SELECT * FROM whois WHERE name LIKE ?", ['%' + search[0] + '%'])
+    result = sqlPointer.fetchone()
+    if result is None:
+        # TODO: Implement fuzzy search
+        await ctx.send("No results found")
+        return
+    await ctx.send(result)
 
 
 bot.run(bot.config_token)
