@@ -38,6 +38,13 @@ us_words = []
 rr_file = "reaction_roles.csv"
 commit_feeds_file = "commitfeeds.txt"
 sqlConnection = sqlite3.connect("whois.db")
+sqlPointer = sqlConnection.cursor()
+# Check if a database exists
+sqlPointer.execute(
+    "create table if not exists whois (id INTEGER PRIMARY KEY, name TEXT NOT NULL , discord_name TEXT NOT NULL , "
+    "user_id INTEGER NOT NULL, school TEXT, status INTEGER NOT NULL, "
+    "year INTEGER, join_date TEXT NOT NULL );")
+sqlConnection.commit()
 
 
 # Are yah ready kids?
@@ -494,6 +501,29 @@ async def addrepo(ctx, link):
     write_feeds_to_file(commit_feeds_file, feeds)
 
     await ctx.reply("Added!")
+
+
+@bot.command(name="join_whois")
+async def whois(ctx, *args):
+    """
+    Add or modify your info to the whois system
+    """
+    # Validate the args, it should be firt name, last name, School
+    if len(args) != 3:
+        await ctx.send(
+            "Invalid number of arguments, should be: " + command_prefix + "recourdinfo first name, last name, "
+                                                                          "school")
+        return
+    role = discord.utils.get(ctx.guild.roles, name="b:whois opted-in")
+    if role not in ctx.author.roles:
+        await ctx.send("You need to opt into using whois")
+        return
+    # Check if the user is already in the database
+    sqlPointer.execute("SELECT * FROM whois WHERE user_id = ?", (ctx.author.id,))
+    if sqlPointer.fetchone() is not None:
+        await ctx.send("You are already in the database, updateing your info")
+        # TODO: Update the user's info
+        return
 
 
 @bot.command(name="whois")
