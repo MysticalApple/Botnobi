@@ -1,0 +1,41 @@
+#Please set repository secret to [TOKEN:youtdiscordtoken] and repository varable to [TOKEN:anything]
+
+name: SimpleBotCI
+
+on:
+  workflow_dispatch:
+  push:
+  pull_request:
+
+jobs:
+  build-and-run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Detect Token
+        if: ${{ vars.TOKEN == '' }}
+        run: echo "Please set the repository varable, Key is TOKEN and Value could be anything."
+      - name: Detect Token
+        env: 
+            TOKEN2: ${{ secrets.TOKEN }}
+        if: ${{ vars.TOKEN != '' && env.TOKEN2 == ''}}
+        run: |
+          echo "Please also include your discord token as a repository secret with key TOKEN."
+          return 1
+      - name: Checkout code
+        if: ${{ vars.TOKEN != '' }}
+        uses: actions/checkout@v4
+      - name: Create secrets.json file from secrets
+        if: ${{ vars.TOKEN != '' }}
+        run: echo "{\"token\":\"${{ secrets.TOKEN }}\"}" > secrets.json
+      - name: Install requirements
+        if: ${{ vars.TOKEN != '' }}
+        run: pip install --no-cache-dir -r requirements.txt
+      - name: Build Perlin.c
+        if: ${{ vars.TOKEN != '' }}
+        run: clang -O3 perlin.c -o perlin -lm
+      - name: CI the bot for 5 min
+        if: ${{ vars.TOKEN != '' }}
+        timeout-minutes: 5
+        run: python bot.py
+        continue-on-error: true
