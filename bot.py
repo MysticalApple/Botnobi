@@ -50,7 +50,6 @@ sqlConnection.commit()
 @bot.event
 async def on_ready():
     print(f"Logged in as: {bot.user.name} : {bot.user.id}\n-----\nCurrent prefix: '{command_prefix}'")
-
     with open("us_words.csv") as f:
         reader = csv.reader(f)
         for row in reader:
@@ -545,8 +544,11 @@ async def whois(ctx, *args):
 
 @bot.command(name="whois")
 async def whois(ctx, *, search):
-    sqlPointer.execute("SELECT * FROM whois WHERE discord_name = ?", [search])
-    await ctx.send(sqlPointer.fetchone())
+    sqlPointer.execute("SELECT * FROM whois WHERE discord_name LIKE ?", ['%' + search[0] + '%'])
+    if sqlPointer.fetchone() is None:
+        # TODO: Implement fuzzy search
+        return
+    await ctx.send(sqlPointer.fetchall())
 
 
 @bot.command(name="iswhom")
