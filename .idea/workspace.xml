@@ -5,14 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f8b8b15d-fcd2-465a-91ab-bb724bca5513" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/Botnobi.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/dataSources.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/sqldialects.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources/e4853d1b-a62f-4652-8380-ecef58785076.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/e4853d1b-a62f-4652-8380-ecef58785076.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/bot.py" beforeDir="false" afterPath="$PROJECT_DIR$/bot.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/whois.db" beforeDir="false" afterPath="$PROJECT_DIR$/whois.db" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/whois.db" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -81,7 +78,8 @@
       <updated>1720133327856</updated>
       <workItem from="1720133333148" duration="1419000" />
       <workItem from="1720202646218" duration="137000" />
-      <workItem from="1720202874232" duration="4493000" />
+      <workItem from="1720202874232" duration="4586000" />
+      <workItem from="1720212012225" duration="4478000" />
     </task>
     <servers />
   </component>
@@ -89,6 +87,6 @@
     <option name="version" value="3" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/Botnobi$bot.coverage" NAME="bot Coverage Results" MODIFIED="1720207264624" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Botnobi$bot.coverage" NAME="bot Coverage Results" MODIFIED="1720216700241" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>

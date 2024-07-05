@@ -40,10 +40,9 @@ commit_feeds_file = "commitfeeds.txt"
 sqlConnection = sqlite3.connect("whois.db")
 sqlPointer = sqlConnection.cursor()
 # Check if a database exists
-sqlPointer.execute(
-    "create table if not exists whois (id INTEGER PRIMARY KEY, name TEXT NOT NULL , discord_name TEXT NOT NULL , "
-    "user_id INTEGER NOT NULL, school TEXT, status INTEGER NOT NULL, "
-    "year INTEGER, join_date TEXT NOT NULL );")
+sqlPointer.execute("create table if not exists whois (name TEXT NOT NULL , discord_name TEXT NOT NULL , "
+                   "user_id INTEGER PRIMARY KEY, school TEXT, status INTEGER NOT NULL, "
+                   "year INTEGER, join_date TEXT NOT NULL );")
 sqlConnection.commit()
 
 
@@ -509,26 +508,45 @@ async def whois(ctx, *args):
     Add or modify your info to the whois system
     """
     # Validate the args, it should be firt name, last name, School
-    if len(args) != 3:
+    sql_key_words = ["TABLE", "DROP", "SELECT", "FROM", "DELETE", "CREATE", "ALTER", "UPDATE", "INSERT", "INTO", ]
+    # check if any part of any argument is a sql keyword, must be case-insensitive
+    for arg in args:
+        for keyword in sql_key_words:
+            if keyword.lower() in arg.lower():
+                await ctx.send(
+                    "No, you can't do that, sql injection is bad!\nIf you believe this is a mistake, please contact "
+                    "the developer.\nUse `b:info` for contact info.")
+                return
+    if len(args) != 4:
         await ctx.send(
-            "Invalid number of arguments, should be: " + command_prefix + "recourdinfo first name, last name, "
-                                                                          "school")
+            "Invalid number of arguments, should be: `" + command_prefix + "join_whois first name, last name, school "
+                                                                           ", Graduation year`")
         return
     role = discord.utils.get(ctx.guild.roles, name="b:whois opted-in")
     if role not in ctx.author.roles:
-        await ctx.send("You need to opt into using whois")
+        await ctx.send("You need to opt into using whois.")
         return
     # Check if the user is already in the database
-    sqlPointer.execute("SELECT * FROM whois WHERE user_id = ?", (ctx.author.id,))
+    id_sql = [ctx.author.id]
+    sqlPointer.execute("SELECT * FROM whois WHERE user_id = ?", id_sql)
+    user_info = [(args[0] + ", " + args[1]), ctx.author.name, args[2], 1, args[3], ctx.author.joined_at, ctx.author.id]
     if sqlPointer.fetchone() is not None:
-        await ctx.send("You are already in the database, updateing your info")
-        # TODO: Update the user's info
+        sqlPointer.execute("UPDATE whois SET name = ?, discord_name = ?, school = ?, status = ?, year = ?, join_date "
+                           "= ? WHERE user_id = ?", user_info)
+        sqlConnection.commit()
+        await ctx.send("You are already in the database, updating your info")
         return
+    await ctx.send("Adding your info.")
+    sqlPointer.execute("INSERT INTO whois (name, discord_name, school, status, year, join_date, user_id) VALUES (?,?,"
+                       "?,?,?,?,?)", user_info)
+    sqlConnection.commit()
+    await ctx.send("You have been added to the database")
 
 
 @bot.command(name="whois")
 async def whois(ctx, *, search):
-    await ctx.send("Working")
+    sqlPointer.execute("SELECT * FROM whois WHERE discord_name = ?", [search])
+    await ctx.send(sqlPointer.fetchone())
 
 
 @bot.command(name="iswhom")
