@@ -1,0 +1,25 @@
+name: Build and Run Docker Container
+
+on: 
+  workflow_dispatch:
+  push:
+
+jobs:
+  build-and-run:
+    runs-on: ubuntu-latest
+
+    timeout-minutes: 600
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Create .env file from secrets
+      run: |
+        echo "{\"token\"=\"${{ secrets.TOKEN }}\"" > secrets.json
+
+    - name: CI the bot for 10 min
+      if: always()
+      run: |
+        pip install --no-cache-dir -r requirements.txt
+        python bot.py
