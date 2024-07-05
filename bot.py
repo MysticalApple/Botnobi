@@ -8,6 +8,7 @@ import os
 import platform
 import random
 import re
+import sqlite3
 import textwrap
 import traceback
 from datetime import datetime, timezone
@@ -20,8 +21,8 @@ import feedparser
 from PIL import Image, ImageColor
 from discord.ext import commands, tasks
 from num2words import num2words
+
 from utils.util import (config_get, config_set, get_feeds_from_file, write_feeds_to_file, clean_code, )
-import sqlite3
 
 cwd = Path(__file__).parents[0]
 cwd = str(cwd)
@@ -112,8 +113,8 @@ async def on_raw_reaction_add(reaction):
                 file.write("\n".join([str(message_id) for message_id in starboard_messages]))
 
             embed = discord.Embed(colour=message.author.colour,
-                description=f"{message.content}\n\n[Click for context]({message.jump_url})",
-                timestamp=message.created_at, )
+                                  description=f"{message.content}\n\n[Click for context]({message.jump_url})",
+                                  timestamp=message.created_at, )
 
             embed.set_author(name=message.author.display_name, icon_url=message.author.avatar)
             embed.set_footer(text=f"{message.guild.name} | {message.channel.name}")
@@ -198,13 +199,13 @@ async def update_commit_feed():
             desc += f"[`{commit.link.split('/')[-1][:7]}`]({commit.link}) {commit.title} -- {commit.author}\n"
 
         embed = discord.Embed(title=f"[{repo}:{branch}] {count} new commit{'s' if count > 1 else ''}",
-            color=channel.guild.get_member(bot.user.id).color, description=desc,
-            url=feed["link"][:-5] if count > 1 else commit.link, )
+                              color=channel.guild.get_member(bot.user.id).color, description=desc,
+                              url=feed["link"][:-5] if count > 1 else commit.link, )
 
         embed.timestamp = datetime.strptime(new_commits[0].updated, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
 
         embed.set_author(name=new_commits[0].author, url=f"https://github.com/{new_commits[0].author}",
-            icon_url=new_commits[0].media_thumbnail[0]["url"], )
+                         icon_url=new_commits[0].media_thumbnail[0]["url"], )
 
         await channel.send(embed=embed)
 
@@ -233,7 +234,7 @@ async def info(ctx):
     user_count = len(set(bot.get_all_members()))
 
     embed = discord.Embed(title=":information_source: Botnobi", description="\uFEFF", color=ctx.guild.me.color,
-        timestamp=ctx.message.created_at, )
+                          timestamp=ctx.message.created_at, )
 
     embed.add_field(name="<:github:1022443922133360640>", value="[Repo](https://github.com/MysticalApple/Botnobi)", )
     embed.add_field(name="Python Version", value=python_version)
@@ -289,6 +290,12 @@ async def sheep(ctx):
     Sends a sheep
     """
     await ctx.send("<a:seansheep:718186115294691482>```\n         ,ww\n   wWWWWWWW_)\n   `WWWWWW'\n    II  II```")
+
+
+@bot.command(name="moo")
+async def cow(ctx):
+    await ctx.send(
+        "```               _     _\n""              (_\\___( \\,\n""                )___   _  \n""               /( (_)-(_)    \n""    ,---------'         \\_\n""  //(  ',__,'      \\  (' ')\n"" //  )              '----'\n"" '' ; \\     .--.  ,/\n""    | )',_,'----( ;\n""    ||| '''     '||\n```The apt cow \n")
 
 
 @bot.command(name="emotize")
