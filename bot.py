@@ -252,6 +252,7 @@ async def info(ctx):
     embed.add_field(name="Servers", value=server_count)
     embed.add_field(name="Users", value=user_count)
     embed.add_field(name="Bot Creator", value="<@!595719716560175149>")
+    embed.add_field(name="Bot Maintainer", value="<@!1110811715169423381>")
 
     embed.set_footer(text="As of")
     embed.set_author(name=ctx.guild.me.display_name, icon_url=bot.user.avatar)
@@ -538,17 +539,16 @@ async def modify_whois(ctx, *args):
         sqlPointer.execute("UPDATE whois SET name = ?, discord = ?, school = ?, status = ?, year = ?, join_date "
                            "= ? WHERE user_id = ?", user_info)
         sqlConnection.commit()
-        await ctx.send("You are already in the database, updated your info")
+        await ctx.send(
+            f"You are already in the database, updated your info\nTo opt out run `{command_prefix}leave_whois`")
         return
-    await ctx.send("Adding your info.")
     sqlPointer.execute("INSERT INTO whois (name, discord, school, status, year, join_date, user_id) VALUES (?,?,"
                        "?,?,?,?,?)", user_info)
     sqlConnection.commit()
-    await ctx.send("Validating your info.")
     sqlPointer.execute("SELECT * FROM whois WHERE user_id = ?", id_sql)
     await send_user_embed(ctx, sqlPointer.fetchone())
     await ctx.send(
-        f"You have been added to the whois database.\nIf your info is not correct please run `{command_prefix}update_whois firstname lastname school graduation year` again.")
+        f"You have been added to the whois database.\nIf your info is not correct please run `{command_prefix}update_whois firstname lastname school graduation year` again.\nTo opt out run `{command_prefix}leave_whois`")
     return
 
 
