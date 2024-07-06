@@ -5,8 +5,6 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f8b8b15d-fcd2-465a-91ab-bb724bca5513" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/b5f989a0-bdf5-4818-9847-b7af2cfbc97d.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/b5f989a0-bdf5-4818-9847-b7af2cfbc97d/storage_v2/_src_/schema/main.uQUzAA.meta" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/bot.py" beforeDir="false" afterPath="$PROJECT_DIR$/bot.py" afterDir="false" />
     </list>
@@ -80,7 +78,7 @@
       <workItem from="1720202874232" duration="4586000" />
       <workItem from="1720212012225" duration="6356000" />
       <workItem from="1720222993750" duration="3049000" />
-      <workItem from="1720232879063" duration="2606000" />
+      <workItem from="1720232879063" duration="3186000" />
     </task>
     <servers />
   </component>
@@ -88,6 +86,6 @@
     <option name="version" value="3" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/Botnobi$bot.coverage" NAME="bot Coverage Results" MODIFIED="1720235698661" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Botnobi$bot.coverage" NAME="bot Coverage Results" MODIFIED="1720236295969" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>

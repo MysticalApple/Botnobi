@@ -577,10 +577,11 @@ async def whois(ctx, *args):
             await ctx.send(possible_results)
             return
     else:
-        print(result)
-        embed = discord.Embed(colour=discord.Colour.brand_red(),
+        user = await bot.fetch_user(result[2])
+        embed = discord.Embed(colour=user.accent_color,
                               title=f"{config_get('school_name')} Server User Info (`{ctx.message.content.split(' ')[0]}`)",
-                              description=f"Information about {result[1]}")
+                              description=f"Information about <@{result[2]}>")
+        embed.set_thumbnail(url=user.avatar)
         embed.set_footer(text="Keep in mind b:whois searches usernames, while b:iswhom searches real names.")
         embed.add_field(inline=True, name="Year", value=result[5])
         embed.add_field(inline=True, name="Name", value=result[0])
