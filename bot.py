@@ -267,12 +267,12 @@ async def disconnect(ctx):
     Takes Botnobi offline
     """
     await ctx.send("Disconnecting...")
-    await bot.logout()
+    await bot.close()
 
 
 @bot.command(name="eval")
 @commands.is_owner()
-async def eval(ctx, *, code):
+async def evaluate(ctx, *, code):
     """
     Runs python code
     """
@@ -600,7 +600,7 @@ async def whois(ctx, *args):
             embed = discord.Embed(colour=discord.Colour.darker_gray(),
                                   title=f"{config_get('school_name')} Server User Info (`{ctx.message.content.split(' ')[0]}`)",
                                   description="This is a fuzzy search, listed are the closest results")
-            embed.set_footer(text="Keep in mind `b:whois` searches usernames, while `b:iswhom` searches real names.")
+            embed.set_footer(text="Keep in mind `b:whois` searches usernames, while `b:iswho` searches real names.")
             embed.add_field(inline=False, name=f"Fuzzy Search Results for: `{key}:{value}`",
                             value="\n".join(potential_results))
             await ctx.send(embed=embed, allowed_mentions=None)
@@ -611,17 +611,10 @@ async def whois(ctx, *args):
             return
 
 
-@bot.command(name="iswhom")
-async def iswhom(ctx, first, last):
-    """Allow to search for a defined first and last name"""
-    sqlPointer.execute("SELECT * FROM whois WHERE name LIKE ?", ['%' + first + ', ' + last + '%'])
-    result = sqlPointer.fetchone()
-    if (len(result) == 0) or (result is None):
-        await ctx.send("No results found")
-        return
-    else:
-        await send_user_embed(ctx, result)
-        return
+@bot.command(name="iswho")
+async def iswho(ctx, first, last):
+    args = ["name", first + ", " + last]
+    await whois(ctx, *args)
 
 
 @bot.command(name="EXECUTE_SQL")
@@ -664,7 +657,7 @@ async def send_user_embed(ctx, users):
                     value=f"<t:{int(datetime.strptime(users[6], '%Y-%m-%d %H:%M:%S.%f%z').timestamp())}:F>")
     embed.add_field(inline=True, name="Status", value="Present" if users[4] == 1 else "Absent", )
     embed.add_field(inline=False, name="Note",
-                    value=f"Fuzzy searching with `{command_prefix}iswhom` is not supported.\nif you wan to fuzzy search names you should do: `{command_prefix}whois name first name, last name`\nKeep in mind `{command_prefix}whois` searches usernames, while `{command_prefix}iswhom` searches real names.")
+                    value=f"Fuzzy searching with `{command_prefix}iswho` is not well supported.\nif you wan to fuzzy search names you should do: `{command_prefix}whois name \"firstname, lastname\"`\nKeep in mind `{command_prefix}whois` searches usernames, while `{command_prefix}iswho` searches real names.")
     await ctx.send(embed=embed, allowed_mentions=None)
     return
 
