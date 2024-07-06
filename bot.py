@@ -542,26 +542,26 @@ async def whois(ctx, *args):
     await ctx.send("You have been added to the database")
 
 
-@bot.command(name="whois")
 # TODO: allow key value search
 # TODO: show multiple results
 # TODO: fuzzy search
-async def whois(ctx, *search):
-    sqlPointer.execute("SELECT * FROM whois WHERE discord_name LIKE ?", ['%' + search[0] + '%'])
-    result = sqlPointer.fetchone()
-    if result is None:
-        await ctx.send("No results found")
+@bot.command(name="whois")
+async def whois(ctx, *args):
+    """Allow for a key value search in the whois database"""
+    if len(args) != 2:
+        await ctx.send("Invalid number of arguments, should be: `" + command_prefix + "whois key value`")
         return
-    await ctx.send(result)
-
-
-@bot.command(name="iswhom")
-async def iswhom(ctx, *search):
-    sqlPointer.execute("SELECT * FROM whois WHERE name LIKE ?", ['%' + search[0] + '%'])
+    key = args[0]
+    value = args[1]
+    allowed_keys = ["name", "discord_name", "join_date", "user_id"]
+    if key not in allowed_keys:
+        await ctx.send("Invalid key, valid keys are: " + ", ".join(allowed_keys))
+        return
+    sqlPointer.execute("SELECT * FROM whois WHERE " + key + " LIKE ?", ['%' + value + '%'])
     result = sqlPointer.fetchone()
     if result is None:
-        # TODO: Implement fuzzy search
-        await ctx.send("No results found")
+        sqlPointer.execute("SELECT " + key + " FROM whois")
+        await ctx.send(sqlPointer.fetchone())
         return
     await ctx.send(result)
 

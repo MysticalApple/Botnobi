@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="whois.db" uuid="b5f989a0-bdf5-4818-9847-b7af2cfbc97d">
+    <data-source source="LOCAL" name="whois.db" uuid="8494e4a1-9366-4a0d-afda-23fab0e1da10">
       <driver-ref>sqlite.xerial</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
