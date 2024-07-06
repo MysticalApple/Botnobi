@@ -20,6 +20,7 @@ import discord
 import feedparser
 from PIL import Image, ImageColor
 from discord.ext import commands, tasks
+from fuzzywuzzy import fuzz
 from num2words import num2words
 
 from utils.util import (config_get, config_set, get_feeds_from_file, write_feeds_to_file, clean_code, )
@@ -561,9 +562,34 @@ async def whois(ctx, *args):
     result = sqlPointer.fetchone()
     if result is None:
         sqlPointer.execute("SELECT " + key + " FROM whois")
-        await ctx.send(sqlPointer.fetchone())
-        return
-    await ctx.send(result)
+        result = sqlPointer.fetchall()
+        if result is None:
+            await ctx.send("No results found")
+            return
+        possible_results = []
+        for row in result:
+            if fuzz.token_sort_ratio(value, row) > 85:
+                possible_results.append(row)
+        if len(possible_results) == 0:
+            await ctx.send("No results found")
+            return
+        else:
+            await ctx.send(possible_results)
+            return
+    else:
+        print(result)
+        embed = discord.Embed(colour=discord.Colour.brand_red(),
+                              title=f"{config_get('school_name')} Server User Info (`{ctx.message.content.split(' ')[0]}`)",
+                              description=f"Information about {result[1]}")
+        embed.set_footer(text="Keep in mind b:whois searches usernames, while b:iswhom searches real names.")
+        embed.add_field(inline=True, name="Year", value=result[5])
+        embed.add_field(inline=True, name="Name", value=result[0])
+        embed.add_field(inline=True, name="School", value=result[3])
+        embed.add_field(inline=True, name="Discord", value=result[1])
+        embed.add_field(inline=True, name="Join Date",
+                        value=f"<t:{int(datetime.strptime(result[6], '%Y-%m-%d %H:%M:%S.%f%z').timestamp())}:F>")
+        embed.add_field(inline=True, name="Status", value="Present" if result[4] == 1 else "Absent", )
+        await ctx.send(embed=embed, allowed_mentions=None)
 
 
 bot.run(bot.config_token)
