@@ -82,7 +82,7 @@ async def on_message(message):
         await message.channel.send("General Kenobi!")
 
     # Pingus pongus
-    if (f"<@!{bot.user.id}>" in message.content or f"<@{bot.user.id}>" in message.content):
+    if f"<@!{bot.user.id}>" in message.content or f"<@{bot.user.id}>" in message.content:
         await message.reply(f"pingus pongus your mother is {random.choice(us_words)}")
 
     # Says goodnight to henry
@@ -108,7 +108,7 @@ async def on_raw_reaction_add(reaction):
     # Starboard
     star = "⭐"
     star_count = next((r.count for r in message.reactions if r.emoji == star), 0)
-    if (star_count >= config_get("minimum_starboard_stars") and message.guild.id == 710932856251351111):
+    if star_count >= config_get("minimum_starboard_stars") and message.guild.id == 710932856251351111:
         starboard_messages = []
         with open("starboard.txt", "r") as file:
             starboard_messages = [int(message_id) for message_id in file.read().rstrip().split("\n")]
@@ -125,7 +125,7 @@ async def on_raw_reaction_add(reaction):
             embed.set_author(name=message.author.display_name, icon_url=message.author.avatar)
             embed.set_footer(text=f"{message.guild.name} | {message.channel.name}")
 
-            if (message.attachments != [] and "image" in message.attachments[0].content_type):
+            if message.attachments != [] and "image" in message.attachments[0].content_type:
                 embed.set_image(url=message.attachments[0].url)
 
             await bot.get_channel(config_get("starboard_channel_id")).send(embed=embed)
@@ -196,7 +196,7 @@ async def update_commit_feed():
         if not new_commits:
             continue
 
-        # Prepare embed for sending (format stolen from https://github.com/Obi-Wan3/OB13-Cogs/blob/main/github/github.py)
+        # Prepare embed for sending (format stolen from https://github.com/Obi-Wan3/OB13-Cogs/blob/main/github/github.py
         channel = bot.get_channel(config_get("commits_channel_id"))
 
         count = len(new_commits)

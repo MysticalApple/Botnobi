@@ -5,6 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f8b8b15d-fcd2-465a-91ab-bb724bca5513" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/bot.py" beforeDir="false" afterPath="$PROJECT_DIR$/bot.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
     </list>
@@ -46,7 +47,7 @@
     "Python.bot.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "git-widget-placeholder": "update__deps",
+    "git-widget-placeholder": "main",
     "last_opened_file_path": "/Volumes/Disk/code/Botnobi",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
@@ -81,6 +82,7 @@
       <workItem from="1720232879063" duration="5708000" />
       <workItem from="1720241202081" duration="3942000" />
       <workItem from="1720285065820" duration="3153000" />
+      <workItem from="1720288908690" duration="320000" />
     </task>
     <servers />
   </component>
