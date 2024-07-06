@@ -41,7 +41,7 @@ commit_feeds_file = "commitfeeds.txt"
 sqlConnection = sqlite3.connect("whois.db")
 sqlPointer = sqlConnection.cursor()
 # Check if a database exists
-sqlPointer.execute("create table if not exists whois (name TEXT NOT NULL , discord_name TEXT NOT NULL , "
+sqlPointer.execute("create table if not exists whois (name TEXT NOT NULL , discord TEXT NOT NULL , "
                    "user_id INTEGER PRIMARY KEY, school TEXT, status INTEGER NOT NULL, "
                    "year INTEGER, join_date TEXT NOT NULL );")
 sqlConnection.commit()
@@ -531,13 +531,13 @@ async def whois(ctx, *args):
     sqlPointer.execute("SELECT * FROM whois WHERE user_id = ?", id_sql)
     user_info = [(args[0] + ", " + args[1]), ctx.author.name, args[2], 1, args[3], ctx.author.joined_at, ctx.author.id]
     if sqlPointer.fetchone() is not None:
-        sqlPointer.execute("UPDATE whois SET name = ?, discord_name = ?, school = ?, status = ?, year = ?, join_date "
+        sqlPointer.execute("UPDATE whois SET name = ?, discord = ?, school = ?, status = ?, year = ?, join_date "
                            "= ? WHERE user_id = ?", user_info)
         sqlConnection.commit()
         await ctx.send("You are already in the database, updated your info")
         return
     await ctx.send("Adding your info.")
-    sqlPointer.execute("INSERT INTO whois (name, discord_name, school, status, year, join_date, user_id) VALUES (?,?,"
+    sqlPointer.execute("INSERT INTO whois (name, discord, school, status, year, join_date, user_id) VALUES (?,?,"
                        "?,?,?,?,?)", user_info)
     sqlConnection.commit()
     await ctx.send("You have been added to the database")
@@ -554,7 +554,7 @@ async def whois(ctx, *args):
         return
     key = args[0]
     value = args[1]
-    allowed_keys = ["name", "discord_name", "join_date", "user_id"]
+    allowed_keys = ["name", "discord", "join_date", "user_id"]
     if key not in allowed_keys:
         await ctx.send("Invalid key, valid keys are: " + ", ".join(allowed_keys))
         return
