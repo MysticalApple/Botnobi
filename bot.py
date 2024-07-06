@@ -178,6 +178,10 @@ async def on_member_remove(member):
         # Sends it
         await channel.send(embed=embed)
 
+    # Set Statis to 0 in the whois db
+    sqlPointer.execute("UPDATE whois SET status = 0 WHERE user_id = ?", [member.id])
+    sqlConnection.commit()
+
 
 # Github commit feeds
 @tasks.loop(minutes=3)
@@ -503,7 +507,7 @@ async def addrepo(ctx, link):
 
 
 @bot.command(name="join_whois")
-async def whois(ctx, *args):
+async def modify_whois(ctx, *args):
     """
     Add or modify your info to the whois system
     """
@@ -524,8 +528,8 @@ async def whois(ctx, *args):
         return
     role = discord.utils.get(ctx.guild.roles, name="b:whois opted-in")
     if role not in ctx.author.roles:
-        await ctx.send("You need to opt into using whois.")
-        return
+        await ctx.send(f"By running this command you are opting in. \nTo opt out run `{command_prefix}leave_whois`")
+        await ctx.author.add_roles(role)
     # Check if the user is already in the database
     id_sql = [ctx.author.id]
     sqlPointer.execute("SELECT * FROM whois WHERE user_id = ?", id_sql)
@@ -540,12 +544,20 @@ async def whois(ctx, *args):
     sqlPointer.execute("INSERT INTO whois (name, discord, school, status, year, join_date, user_id) VALUES (?,?,"
                        "?,?,?,?,?)", user_info)
     sqlConnection.commit()
-    await ctx.send("You have been added to the database")
+    await ctx.send("Validating your info.")
+    sqlPointer.execute("SELECT * FROM whois WHERE user_id = ?", id_sql)
+    await send_user_embed(ctx, sqlPointer.fetchone())
+    await ctx.send(
+        f"You have been added to the whois database.\nIf your info is not correct please run `{command_prefix}update_whois firstname lastname school graduation year` again.")
+    return
 
 
-# TODO: allow key value search
-# TODO: show multiple results
-# TODO: fuzzy search
+@bot.command(name="update_whois")
+async def update_whois(ctx, *args):
+    """Alias for join_whois"""
+    await modify_whois(ctx, *args)
+
+
 @bot.command(name="whois")
 async def whois(ctx, *args):
     """Allow for a key value search in the whois database"""
@@ -554,6 +566,14 @@ async def whois(ctx, *args):
         return
     key = args[0]
     value = args[1]
+    # Check for b:whois key @user
+    pattern = re.compile("(<@|>)")
+    if pattern.match(value):
+        value = re.sub('(<@|>)', '', value)
+        sqlPointer.execute("SELECT * FROM whois WHERE user_id = ?", [value])
+        users = sqlPointer.fetchone()
+        await send_user_embed(ctx, users)
+        return
     allowed_keys = ["name", "discord", "join_date", "user_id"]
     if key not in allowed_keys:
         await ctx.send("Invalid key, valid keys are: " + ", ".join(allowed_keys))
@@ -580,27 +600,73 @@ async def whois(ctx, *args):
             embed = discord.Embed(colour=discord.Colour.darker_gray(),
                                   title=f"{config_get('school_name')} Server User Info (`{ctx.message.content.split(' ')[0]}`)",
                                   description="This is a fuzzy search, listed are the closest results")
-            embed.set_footer(text="Keep in mind b:whois searches usernames, while b:iswhom searches real names.")
+            embed.set_footer(text="Keep in mind `b:whois` searches usernames, while `b:iswhom` searches real names.")
             embed.add_field(inline=False, name=f"Fuzzy Search Results for: `{key}:{value}`",
                             value="\n".join(potential_results))
             await ctx.send(embed=embed, allowed_mentions=None)
             return
     else:
         for users in result:
-            user = await bot.fetch_user(users[2])
-            embed = discord.Embed(colour=user.accent_color,
-                                  title=f"{config_get('school_name')} Server User Info (`{ctx.message.content.split(' ')[0]}`)",
-                                  description=f"Information about <@{users[2]}>")
-            embed.set_thumbnail(url=user.avatar)
-            embed.set_footer(text="Keep in mind b:whois searches usernames, while b:iswhom searches real names.")
-            embed.add_field(inline=True, name="Year", value=users[5])
-            embed.add_field(inline=True, name="Name", value=users[0])
-            embed.add_field(inline=True, name="School", value=users[3])
-            embed.add_field(inline=True, name="Discord", value=users[1])
-            embed.add_field(inline=True, name="Join Date",
-                            value=f"<t:{int(datetime.strptime(users[6], '%Y-%m-%d %H:%M:%S.%f%z').timestamp())}:F>")
-            embed.add_field(inline=True, name="Status", value="Present" if users[4] == 1 else "Absent", )
-            await ctx.send(embed=embed, allowed_mentions=None)
+            await send_user_embed(ctx, users)
+            return
+
+
+@bot.command(name="iswhom")
+async def iswhom(ctx, first, last):
+    """Allow to search for a defined first and last name"""
+    sqlPointer.execute("SELECT * FROM whois WHERE name LIKE ?", ['%' + first + ', ' + last + '%'])
+    result = sqlPointer.fetchone()
+    if (len(result) == 0) or (result is None):
+        await ctx.send("No results found")
+        return
+    else:
+        await send_user_embed(ctx, result)
+        return
+
+
+@bot.command(name="EXECUTE_SQL")
+async def execute_sql(ctx, sql):
+    if ctx.author.guild_permissions.administrator or ctx.author.id == 1110811715169423381:
+        sqlPointer.execute(sql)
+        result = sqlPointer.fetchall()
+        await ctx.send(result)
+        return
+    else:
+        await ctx.send("You do not have the required permissions to do this")
+
+
+@bot.command(name="leave_whois")
+async def leave_whois(ctx):
+    """
+    Remove yourself from the whois database
+    """
+    role = discord.utils.get(ctx.guild.roles, name="b:whois opted-in")
+    if role in ctx.author.roles:
+        await ctx.author.remove_roles(role)
+        sqlPointer.execute("DELETE FROM whois WHERE user_id = ?", [ctx.author.id])
+        sqlConnection.commit()
+        await ctx.send("You have been removed from the whois database")
+    else:
+        await ctx.send("You are not in the whois database")
+
+
+async def send_user_embed(ctx, users):
+    user = await bot.fetch_user(users[2])
+    embed = discord.Embed(colour=user.accent_color,
+                          title=f"{config_get('school_name')} Server User Info (`{ctx.message.content.split(' ')[0]}`)",
+                          description=f"Information about <@{users[2]}>")
+    embed.set_thumbnail(url=user.avatar)
+    embed.add_field(inline=True, name="Year", value=users[5])
+    embed.add_field(inline=True, name="Name", value=users[0])
+    embed.add_field(inline=True, name="School", value=users[3])
+    embed.add_field(inline=True, name="Discord", value=users[1])
+    embed.add_field(inline=True, name="Join Date",
+                    value=f"<t:{int(datetime.strptime(users[6], '%Y-%m-%d %H:%M:%S.%f%z').timestamp())}:F>")
+    embed.add_field(inline=True, name="Status", value="Present" if users[4] == 1 else "Absent", )
+    embed.add_field(inline=False, name="Note",
+                    value=f"Fuzzy searching with `{command_prefix}iswhom` is not supported.\nif you wan to fuzzy search names you should do: `{command_prefix}whois name first name, last name`\nKeep in mind `{command_prefix}whois` searches usernames, while `{command_prefix}iswhom` searches real names.")
+    await ctx.send(embed=embed, allowed_mentions=None)
+    return
 
 
 bot.run(bot.config_token)

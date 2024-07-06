@@ -499,7 +499,7 @@
     </routine>
     <schema id="191" parent="1" name="main">
       <Current>1</Current>
-      <LastIntrospectionLocalTimestamp>2024-07-06.00:34:23</LastIntrospectionLocalTimestamp>
+      <LastIntrospectionLocalTimestamp>2024-07-06.04:04:08</LastIntrospectionLocalTimestamp>
     </schema>
     <argument id="192" parent="16">
       <ArgumentDirection>R</ArgumentDirection>
@@ -1619,7 +1619,7 @@
       <NotNull>1</NotNull>
       <Position>1</Position>
     </column>
-    <column id="563" parent="556" name="discord_name">
+    <column id="563" parent="556" name="discord">
       <DasType>TEXT|0s</DasType>
       <NotNull>1</NotNull>
       <Position>2</Position>
