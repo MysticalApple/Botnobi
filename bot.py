@@ -270,6 +270,15 @@ async def disconnect(ctx):
     await bot.close()
 
 
+@bot.command(name="close")
+@commands.is_owner()
+async def close(ctx):
+    """
+    Alias for disconnect
+    """
+    await disconnect(ctx)
+
+
 @bot.command(name="eval")
 @commands.is_owner()
 async def evaluate(ctx, *, code):
