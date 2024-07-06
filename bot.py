@@ -164,7 +164,7 @@ async def on_raw_reaction_remove(reaction):
 async def on_member_remove(member):
     # Checks that the leaver left the correct server
     if member.guild.id == 710932856251351111 and config_get("leave_log"):
-        # Sets the channel to the one specificied in config.json
+        # Sets the channel to the one specified in config.json
         channel = bot.get_channel(config_get("alerts_channel_id"))
         join_date = member.joined_at
 
