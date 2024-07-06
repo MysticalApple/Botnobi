@@ -559,13 +559,10 @@ async def whois(ctx, *args):
         await ctx.send("Invalid key, valid keys are: " + ", ".join(allowed_keys))
         return
     sqlPointer.execute("SELECT * FROM whois WHERE " + key + " LIKE ?", ['%' + value + '%'])
-    result = sqlPointer.fetchone()
-    if result is None:
+    result = sqlPointer.fetchmany(5)
+    if len(result) == 0:
         sqlPointer.execute("SELECT " + key + " FROM whois")
         result = sqlPointer.fetchall()
-        if result is None:
-            await ctx.send("No results found")
-            return
         possible_results = []
         for row in result:
             if fuzz.token_sort_ratio(value, row) > 85:
@@ -574,23 +571,36 @@ async def whois(ctx, *args):
             await ctx.send("No results found")
             return
         else:
-            await ctx.send(possible_results)
+            potential_results = []
+            for results in possible_results:
+                sqlPointer.execute("SELECT * FROM whois WHERE " + key + " = ?", results)
+                temp_result = sqlPointer.fetchone()
+                potential_results.append(
+                    f"<@{temp_result[2]}> Name (First, Last): {temp_result[0]}, Graduation Year: {temp_result[5]}, School: {temp_result[3]}")
+            embed = discord.Embed(colour=discord.Colour.darker_gray(),
+                                  title=f"{config_get('school_name')} Server User Info (`{ctx.message.content.split(' ')[0]}`)",
+                                  description="This is a fuzzy search, listed are the closest results")
+            embed.set_footer(text="Keep in mind b:whois searches usernames, while b:iswhom searches real names.")
+            embed.add_field(inline=False, name=f"Fuzzy Search Results for: `{key}:{value}`",
+                            value="\n".join(potential_results))
+            await ctx.send(embed=embed, allowed_mentions=None)
             return
     else:
-        user = await bot.fetch_user(result[2])
-        embed = discord.Embed(colour=user.accent_color,
-                              title=f"{config_get('school_name')} Server User Info (`{ctx.message.content.split(' ')[0]}`)",
-                              description=f"Information about <@{result[2]}>")
-        embed.set_thumbnail(url=user.avatar)
-        embed.set_footer(text="Keep in mind b:whois searches usernames, while b:iswhom searches real names.")
-        embed.add_field(inline=True, name="Year", value=result[5])
-        embed.add_field(inline=True, name="Name", value=result[0])
-        embed.add_field(inline=True, name="School", value=result[3])
-        embed.add_field(inline=True, name="Discord", value=result[1])
-        embed.add_field(inline=True, name="Join Date",
-                        value=f"<t:{int(datetime.strptime(result[6], '%Y-%m-%d %H:%M:%S.%f%z').timestamp())}:F>")
-        embed.add_field(inline=True, name="Status", value="Present" if result[4] == 1 else "Absent", )
-        await ctx.send(embed=embed, allowed_mentions=None)
+        for users in result:
+            user = await bot.fetch_user(users[2])
+            embed = discord.Embed(colour=user.accent_color,
+                                  title=f"{config_get('school_name')} Server User Info (`{ctx.message.content.split(' ')[0]}`)",
+                                  description=f"Information about <@{users[2]}>")
+            embed.set_thumbnail(url=user.avatar)
+            embed.set_footer(text="Keep in mind b:whois searches usernames, while b:iswhom searches real names.")
+            embed.add_field(inline=True, name="Year", value=users[5])
+            embed.add_field(inline=True, name="Name", value=users[0])
+            embed.add_field(inline=True, name="School", value=users[3])
+            embed.add_field(inline=True, name="Discord", value=users[1])
+            embed.add_field(inline=True, name="Join Date",
+                            value=f"<t:{int(datetime.strptime(users[6], '%Y-%m-%d %H:%M:%S.%f%z').timestamp())}:F>")
+            embed.add_field(inline=True, name="Status", value="Present" if users[4] == 1 else "Absent", )
+            await ctx.send(embed=embed, allowed_mentions=None)
 
 
 bot.run(bot.config_token)
