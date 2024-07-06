@@ -617,7 +617,7 @@ async def iswho(ctx, first, last):
     await whois(ctx, *args)
 
 
-@bot.command(name="EXECUTE_SQL")
+@bot.command(name="EXEC_SQL")
 async def execute_sql(ctx, sql):
     if ctx.author.guild_permissions.administrator or ctx.author.id == 1110811715169423381:
         sqlPointer.execute(sql)
