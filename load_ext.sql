@@ -1,1 +1,0 @@
-.load sqlite-src/spellfix.dylib
