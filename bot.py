@@ -1,4 +1,4 @@
-# Libraries that is required
+# Libraries I may or may not use
 import contextlib
 import csv
 import io
@@ -11,17 +11,19 @@ import re
 import sqlite3
 import textwrap
 import traceback
-from datetime import datetime, timezone
 from pathlib import Path
-from time import sleep
+import asyncgTTS
 
 import aiohttp
 import discord
-import feedparser
-from PIL import Image, ImageColor
+from datetime import datetime, timezone
 from discord.ext import commands, tasks
+import feedparser
 from fuzzywuzzy import fuzz
+import gspread
 from num2words import num2words
+from PIL import Image, ImageColor
+from time import sleep, time
 
 from utils.util import (config_get, config_set, get_feeds_from_file, write_feeds_to_file, clean_code, )
 
@@ -38,12 +40,21 @@ bot.config_token = secrets_file["token"]
 us_words = []
 rr_file = "reaction_roles.csv"
 commit_feeds_file = "commitfeeds.txt"
+google_creds_file = "google_credentials.json"
 sqlConnection = sqlite3.connect("whois.db")
 sqlPointer = sqlConnection.cursor()
+
+# Check if config.json has the required values
+if config_get("server_id") is None:
+    raise ValueError("server_id is not set in config.json")
+if config_get("verification_sheet_url") is None:
+    raise ValueError("verification_sheet_url is not set in config.json")
+
 # Check if a database exists
-sqlPointer.execute("create table if not exists whois (name TEXT NOT NULL , discord TEXT NOT NULL , "
-                   "user_id INTEGER PRIMARY KEY, school TEXT, status INTEGER NOT NULL, "
-                   "year INTEGER, join_date TEXT NOT NULL );")
+sqlPointer.execute(
+    "CREATE TABLE IF NOT EXISTS whois (user_id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, email TEXT, "
+    "discord_name TEXT, server_join_date TEXT , school TEXT, graduation_year INTEGER, present INTEGER, "
+    "opt_in INTEGER);")
 sqlConnection.commit()
 
 
@@ -57,8 +68,83 @@ async def on_ready():
             us_words.append(row[0])
 
     await bot.change_presence(activity=discord.Game(name="Undergoing Renovations"))
-
     update_commit_feed.start()
+    await sync_data()
+    await set_user_status()
+
+
+async def fetch_remote():
+    gc = gspread.service_account(filename=google_creds_file)
+    gsheet = gc.open_by_url(config_get("verification_sheet_url"))
+    sheet = gsheet.sheet1
+    records = sheet.get_all_records()
+    return records
+
+
+async def fetch_local():
+    db = []
+    sqlPointer.execute("SELECT * FROM whois")
+    for records in sqlPointer.fetchall():
+        user_data = {"Timestamp": records[5], "Email Address": records[3], "First Name": records[1],
+                     "Last Name": records[2], "School": records[6], "Graduation Year": records[7],
+                     "UUID (do NOT change)": records[0]}
+        db.append(user_data)
+    return db
+
+
+async def get_diff():
+    remote = await fetch_remote()
+    local = await fetch_local()
+    diff_add = []
+    diff_del = []
+    for record in remote:
+        if record not in local:
+            diff_add.append(record)
+    for record in local:
+        if record not in remote:
+            diff_del.append(record)
+    diff = {"add": diff_add, "del": diff_del}
+    return diff
+
+
+@tasks.loop(minutes=10)
+async def sync_data():
+    diff = await get_diff()
+    for element in diff["del"]:
+        sqlPointer.execute("DELETE FROM whois WHERE user_id = ?", [element["UUID (do NOT change)"]])
+        sqlConnection.commit()
+    for element in diff["add"]:
+        discord_name_temp = bot.get_user(element["UUID (do NOT change)"])
+        if discord_name_temp is None:
+            discord_name = "Unknown"
+        else:
+            discord_name = discord_name_temp.display_name
+        user_info = (
+            element["UUID (do NOT change)"], element["First Name"], element["Last Name"], element["Email Address"],
+            discord_name, element["Timestamp"], element["School"], element["Graduation Year"])
+        sqlPointer.execute("INSERT INTO whois (user_id, first_name, last_name, email, discord_name, server_join_date, "
+                           "school, graduation_year) VALUES (?,?,?,?,?,?,?,?)", user_info)
+        sqlConnection.commit()
+    await set_user_status()
+
+
+async def set_user_status():
+    guild = bot.get_guild(config_get("server_id"))
+    role = discord.utils.get(guild.roles, name="b:whois opted-in")
+    for member in bot.get_all_members():
+        sqlPointer.execute("Update whois SET present = 1 WHERE user_id = ?", [member.id])
+        if role in member.roles:
+            sqlPointer.execute("Update whois SET opt_in = 1 WHERE user_id = ?", [member.id])
+        sqlConnection.commit()
+
+
+@bot.command(name="sync_whois")
+async def sync_whois(ctx):
+    """
+    Syncs the whois database with the Google sheet
+    """
+    await sync_data()
+    await ctx.send("Synced!")
 
 
 # Errors are not pog
@@ -177,10 +263,6 @@ async def on_member_remove(member):
 
         # Sends it
         await channel.send(embed=embed)
-
-    # Set Statis to 0 in the whois db
-    sqlPointer.execute("UPDATE whois SET status = 0 WHERE user_id = ?", [member.id])
-    sqlConnection.commit()
 
 
 # Github commit feeds
@@ -516,118 +598,11 @@ async def addrepo(ctx, link):
     await ctx.reply("Added!")
 
 
-@bot.command(name="join_whois")
-async def modify_whois(ctx, *args):
-    """
-    Add or modify your info to the whois system
-    """
-    # Validate the args, it should be firt name, last name, School
-    sql_key_words = ["TABLE", "DROP", "SELECT", "FROM", "DELETE", "CREATE", "ALTER", "UPDATE", "INSERT", "INTO", ]
-    # check if any part of any argument is a sql keyword, must be case-insensitive
-    for arg in args:
-        for keyword in sql_key_words:
-            if keyword.lower() in arg.lower():
-                await ctx.send(
-                    "No, you can't do that, sql injection is bad!\nIf you believe this is a mistake, please contact "
-                    "the developer.\nUse `b:info` for contact info.")
-                return
-    if len(args) != 4:
-        await ctx.send(
-            "Invalid number of arguments, should be: `" + command_prefix + "join_whois first name, last name, school "
-                                                                           ", Graduation year`")
-        return
-    role = discord.utils.get(ctx.guild.roles, name="b:whois opted-in")
-    if role not in ctx.author.roles:
-        await ctx.send(f"By running this command you are opting in. \nTo opt out run `{command_prefix}leave_whois`")
-        await ctx.author.add_roles(role)
-    # Check if the user is already in the database
-    id_sql = [ctx.author.id]
-    sqlPointer.execute("SELECT * FROM whois WHERE user_id = ?", id_sql)
-    user_info = [(args[0] + ", " + args[1]), ctx.author.name, args[2], 1, args[3], ctx.author.joined_at, ctx.author.id]
-    if sqlPointer.fetchone() is not None:
-        sqlPointer.execute("UPDATE whois SET name = ?, discord = ?, school = ?, status = ?, year = ?, join_date "
-                           "= ? WHERE user_id = ?", user_info)
-        sqlConnection.commit()
-        await ctx.send(
-            f"You are already in the database, updated your info\nTo opt out run `{command_prefix}leave_whois`")
-        return
-    sqlPointer.execute("INSERT INTO whois (name, discord, school, status, year, join_date, user_id) VALUES (?,?,"
-                       "?,?,?,?,?)", user_info)
-    sqlConnection.commit()
-    sqlPointer.execute("SELECT * FROM whois WHERE user_id = ?", id_sql)
-    await send_user_embed(ctx, sqlPointer.fetchone())
-    await ctx.send(
-        f"You have been added to the whois database.\nIf your info is not correct please run `{command_prefix}update_whois firstname lastname school graduation year` again.\nTo opt out run `{command_prefix}leave_whois`")
-    return
-
-
-@bot.command(name="update_whois")
-async def update_whois(ctx, *args):
-    """Alias for join_whois"""
-    await modify_whois(ctx, *args)
-
-
-@bot.command(name="whois")
-async def whois(ctx, *args):
-    """Allow for a key value search in the whois database"""
-    if len(args) != 2:
-        await ctx.send("Invalid number of arguments, should be: `" + command_prefix + "whois key value`")
-        return
-    key = args[0]
-    value = args[1]
-    # Check for b:whois key @user
-    pattern = re.compile("(<@|>)")
-    if pattern.match(value):
-        value = re.sub('(<@|>)', '', value)
-        sqlPointer.execute("SELECT * FROM whois WHERE user_id = ?", [value])
-        users = sqlPointer.fetchone()
-        await send_user_embed(ctx, users)
-        return
-    allowed_keys = ["name", "discord", "join_date", "user_id"]
-    if key not in allowed_keys:
-        await ctx.send("Invalid key, valid keys are: " + ", ".join(allowed_keys))
-        return
-    sqlPointer.execute("SELECT * FROM whois WHERE " + key + " LIKE ?", ['%' + value + '%'])
-    result = sqlPointer.fetchmany(5)
-    if len(result) == 0:
-        sqlPointer.execute("SELECT " + key + " FROM whois")
-        result = sqlPointer.fetchall()
-        possible_results = []
-        for row in result:
-            if fuzz.token_sort_ratio(value, row) > 85:
-                possible_results.append(row)
-        if len(possible_results) == 0:
-            await ctx.send("No results found")
-            return
-        else:
-            potential_results = []
-            for results in possible_results:
-                sqlPointer.execute("SELECT * FROM whois WHERE " + key + " = ?", results)
-                temp_result = sqlPointer.fetchone()
-                potential_results.append(
-                    f"<@{temp_result[2]}> Name (First, Last): {temp_result[0]}, Graduation Year: {temp_result[5]}, School: {temp_result[3]}")
-            embed = discord.Embed(colour=discord.Colour.darker_gray(),
-                                  title=f"{config_get('school_name')} Server User Info (`{ctx.message.content.split(' ')[0]}`)",
-                                  description="This is a fuzzy search, listed are the closest results")
-            embed.set_footer(text="Keep in mind `b:whois` searches usernames, while `b:iswho` searches real names.")
-            embed.add_field(inline=False, name=f"Fuzzy Search Results for: `{key}:{value}`",
-                            value="\n".join(potential_results))
-            await ctx.send(embed=embed, allowed_mentions=None)
-            return
-    else:
-        for users in result:
-            await send_user_embed(ctx, users)
-            return
-
-
-@bot.command(name="iswho")
-async def iswho(ctx, first, last):
-    args = ["name", first + ", " + last]
-    await whois(ctx, *args)
-
-
 @bot.command(name="EXEC_SQL")
 async def execute_sql(ctx, sql):
+    """
+    Executes a SQL command
+    """
     if ctx.author.guild_permissions.administrator or ctx.author.id == 1110811715169423381:
         sqlPointer.execute(sql)
         result = sqlPointer.fetchall()
@@ -635,40 +610,6 @@ async def execute_sql(ctx, sql):
         return
     else:
         await ctx.send("You do not have the required permissions to do this")
-
-
-@bot.command(name="leave_whois")
-async def leave_whois(ctx):
-    """
-    Remove yourself from the whois database
-    """
-    role = discord.utils.get(ctx.guild.roles, name="b:whois opted-in")
-    if role in ctx.author.roles:
-        await ctx.author.remove_roles(role)
-        sqlPointer.execute("DELETE FROM whois WHERE user_id = ?", [ctx.author.id])
-        sqlConnection.commit()
-        await ctx.send("You have been removed from the whois database")
-    else:
-        await ctx.send("You are not in the whois database")
-
-
-async def send_user_embed(ctx, users):
-    user = await bot.fetch_user(users[2])
-    embed = discord.Embed(colour=user.accent_color,
-                          title=f"{config_get('school_name')} Server User Info (`{ctx.message.content.split(' ')[0]}`)",
-                          description=f"Information about <@{users[2]}>")
-    embed.set_thumbnail(url=user.avatar)
-    embed.add_field(inline=True, name="Year", value=users[5])
-    embed.add_field(inline=True, name="Name", value=users[0])
-    embed.add_field(inline=True, name="School", value=users[3])
-    embed.add_field(inline=True, name="Discord", value=users[1])
-    embed.add_field(inline=True, name="Join Date",
-                    value=f"<t:{int(datetime.strptime(users[6], '%Y-%m-%d %H:%M:%S.%f%z').timestamp())}:F>")
-    embed.add_field(inline=True, name="Status", value="Present" if users[4] == 1 else "Absent", )
-    embed.add_field(inline=False, name="Note",
-                    value=f"Fuzzy searching with `{command_prefix}iswho` is not well supported.\nif you wan to fuzzy search names you should do: `{command_prefix}whois name \"firstname, lastname\"`\nKeep in mind `{command_prefix}whois` searches usernames, while `{command_prefix}iswho` searches real names.")
-    await ctx.send(embed=embed, allowed_mentions=None)
-    return
 
 
 bot.run(bot.config_token)
