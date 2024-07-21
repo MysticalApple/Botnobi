@@ -189,6 +189,11 @@ cython_debug/
 #.idea/
 
 #Other Stuff
+spellfix
+spellfix.so
+spellfix.dll
+spellfix.dylib
+spellfix.dylib.dSYM/
 perlin
 ffmpeg
 nohup.out

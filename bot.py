@@ -11,19 +11,17 @@ import re
 import sqlite3
 import textwrap
 import traceback
+from datetime import datetime, timezone
 from pathlib import Path
-import asyncgTTS
+from time import sleep
 
 import aiohttp
 import discord
-from datetime import datetime, timezone
-from discord.ext import commands, tasks
 import feedparser
-from fuzzywuzzy import fuzz
 import gspread
-from num2words import num2words
 from PIL import Image, ImageColor
-from time import sleep, time
+from discord.ext import commands, tasks
+from num2words import num2words
 
 from utils.util import (config_get, config_set, get_feeds_from_file, write_feeds_to_file, clean_code, )
 
