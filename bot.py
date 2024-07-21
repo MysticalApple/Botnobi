@@ -53,7 +53,7 @@ if config_get("verification_sheet_url") is None:
 # Check if a database exists
 sqlPointer.execute(
     "CREATE TABLE IF NOT EXISTS whois (user_id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, email TEXT, "
-    "discord_name TEXT, server_join_date TEXT , school TEXT, graduation_year INTEGER, present INTEGER, "
+    "discord_name TEXT,discord_display_name TEXT, server_join_date TEXT , school TEXT, graduation_year INTEGER, present INTEGER, "
     "opt_in INTEGER);")
 sqlConnection.commit()
 
@@ -117,13 +117,16 @@ async def sync_data():
         discord_name_temp = bot.get_user(element["UUID (do NOT change)"])
         if discord_name_temp is None:
             discord_name = "Unknown"
+            discord_display_name = "Unknown"
         else:
-            discord_name = discord_name_temp.display_name
+            discord_name = discord_name_temp.name
+            discord_display_name = discord_name_temp.display_name
         user_info = (
             element["UUID (do NOT change)"], element["First Name"], element["Last Name"], element["Email Address"],
-            discord_name, element["Timestamp"], element["School"], element["Graduation Year"])
-        sqlPointer.execute("INSERT INTO whois (user_id, first_name, last_name, email, discord_name, server_join_date, "
-                           "school, graduation_year) VALUES (?,?,?,?,?,?,?,?)", user_info)
+            discord_name, discord_display_name, element["Timestamp"], element["School"], element["Graduation Year"])
+        sqlPointer.execute(
+            "INSERT INTO whois (user_id, first_name, last_name, email, discord_name,discord_display_name, server_join_date, school, graduation_year) VALUES (?,?,?,?,?,?,?,?,?)",
+            user_info)
         sqlConnection.commit()
     await set_user_status()
 
@@ -598,18 +601,49 @@ async def addrepo(ctx, link):
     await ctx.reply("Added!")
 
 
-@bot.command(name="EXEC_SQL")
-async def execute_sql(ctx, sql):
+@bot.command(name="whois")
+async def whois(ctx, pram):
     """
-    Executes a SQL command
+    Looks up a user in the whois database
     """
-    if ctx.author.guild_permissions.administrator or ctx.author.id == 1110811715169423381:
-        sqlPointer.execute(sql)
-        result = sqlPointer.fetchall()
-        await ctx.send(result)
-        return
+    pattern = re.compile("(<@|>)")
+    if pattern.match(pram):
+        pram = re.sub('(<@|>)', '', pram)
+        sqlPointer.execute("SELECT * FROM whois WHERE user_id = ? AND opt_in = 1", [pram])
+        result = sqlPointer.fetchone()
+        await send_embed(ctx, result)
     else:
-        await ctx.send("You do not have the required permissions to do this")
+        sqlPointer.execute("SELECT * FROM whois WHERE discord_name LIKE ? AND opt_in = 1", ['%' + pram + '%'])
+        result = sqlPointer.fetchone()
+        if result is None:
+            sqlPointer.execute("SELECT * FROM whois WHERE discord_display_name LIKE ? AND opt_in = 1",
+                               ['%' + pram + '%'])
+            result = sqlPointer.fetchone()
+            if result is None:
+                await fuzzy_search(pram)
+                return
+            await send_embed(ctx, result)
+        await send_embed(ctx, result)
+
+
+async def send_embed(ctx, result):
+    if result is None:
+        await ctx.send("User not found, or has not opted in")
+        return
+    embed = discord.Embed(title="Whois", color=ctx.guild.me.color)
+    embed.add_field(name="First Name", value=result[1])
+    embed.add_field(name="Last Name", value=result[2])
+    embed.add_field(name="Email", value=result[3])
+    embed.add_field(name="Discord Name", value=result[4])
+    embed.add_field(name="Discord Display Name", value=result[5])
+    embed.add_field(name="Server Join Date", value=result[6])
+    embed.add_field(name="School", value=result[7])
+    embed.add_field(name="Graduation Year", value=result[8])
+    await ctx.send(embed=embed)
+
+
+async def fuzzy_search(pram):
+    return "Under Construction"
 
 
 bot.run(bot.config_token)
