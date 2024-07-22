@@ -5,30 +5,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f8b8b15d-fcd2-465a-91ab-bb724bca5513" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.github/workflows/CI.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.github/workflows/CI.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.github/workflows/codeql.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.github/workflows/codeql.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/Botnobi.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Botnobi.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/dataSources.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/fe2fd665-bb5e-431c-83d8-d3191ecac5fc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/fe2fd665-bb5e-431c-83d8-d3191ecac5fc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/fe2fd665-bb5e-431c-83d8-d3191ecac5fc/storage_v2/_src_/schema/main.uQUzAA.meta" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/fe2fd665-bb5e-431c-83d8-d3191ecac5fc/storage_v2/_src_/schema/main.uQUzAA.meta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources/fe2fd665-bb5e-431c-83d8-d3191ecac5fc.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources/fe2fd665-bb5e-431c-83d8-d3191ecac5fc/storage_v2/_src_/schema/main.uQUzAA.meta" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/sqldialects.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/sqldialects.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.vscode/settings.json" beforeDir="false" afterPath="$PROJECT_DIR$/.vscode/settings.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/bot.py" beforeDir="false" afterPath="$PROJECT_DIR$/bot.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/load_ext.sql" beforeDir="false" afterPath="$PROJECT_DIR$/load_ext.sql" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/sqlite-src/shell.c" beforeDir="false" afterPath="$PROJECT_DIR$/sqlite-src/shell.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/sqlite-src/spellfix.c" beforeDir="false" afterPath="$PROJECT_DIR$/sqlite-src/spellfix.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/sqlite-src/sqlite3.c" beforeDir="false" afterPath="$PROJECT_DIR$/sqlite-src/sqlite3.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/sqlite-src/sqlite3.h" beforeDir="false" afterPath="$PROJECT_DIR$/sqlite-src/sqlite3.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/sqlite-src/sqlite3ext.h" beforeDir="false" afterPath="$PROJECT_DIR$/sqlite-src/sqlite3ext.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/util.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/util.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -61,40 +46,34 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ASKED_ADD_EXTERNAL_FILES&quot;: &quot;true&quot;,
-    &quot;ASKED_SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;Database Script..executor&quot;: &quot;Run&quot;,
-    &quot;Python.bot.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/media/eason/devFS/main/local/Botnobi&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;database.query.execution&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ASKED_ADD_EXTERNAL_FILES": "true",
+    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "Database Script..executor": "Run",
+    "Python.bot.executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "git-widget-placeholder": "main",
+    "last_opened_file_path": "/media/eason/devFS/main/local/Botnobi/whois.db",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable",
+    "vue.rearranger.settings.migration": "true"
   },
-  &quot;keyToStringList&quot;: {
-    &quot;DatabaseDriversLRU&quot;: [
-      &quot;sqlite&quot;
+  "keyToStringList": {
+    "DatabaseDriversLRU": [
+      "sqlite"
     ],
-    &quot;RunConfigurationTargetLRU&quot;: [
-      &quot;a5d8c268-3f8f-4ba2-af1e-76b3273efe7e&quot;
+    "RunConfigurationTargetLRU": [
+      "a5d8c268-3f8f-4ba2-af1e-76b3273efe7e"
     ]
   }
-}</component>
-  <component name="RunManager" selected="Python.bot">
-    <configuration type="DatabaseScript" editBeforeRun="true">
-      <script-file value="$APPLICATION_CONFIG_DIR$/consoles/db/a5d8c268-3f8f-4ba2-af1e-76b3273efe7e/console.sql" />
-      <script-mode>FILE</script-mode>
-      <data-source id="a5d8c268-3f8f-4ba2-af1e-76b3273efe7e" />
-      <method v="2" />
-    </configuration>
+}]]></component>
+  <component name="RunManager">
     <configuration name="bot" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="Botnobi" />
       <option name="ENV_FILES" value="" />
@@ -164,13 +143,26 @@
       <workItem from="1721580716451" duration="6009000" />
       <workItem from="1721596802954" duration="101000" />
       <workItem from="1721596919181" duration="12000" />
+      <workItem from="1721597009666" duration="6045000" />
+      <workItem from="1721619044045" duration="4413000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
   </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/bot.py</url>
+          <line>666</line>
+          <option name="timeStamp" value="23" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/Botnobi$bot.coverage" NAME="bot Coverage Results" MODIFIED="1721588036426" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Botnobi$bot.coverage" NAME="bot Coverage Results" MODIFIED="1721623461299" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>

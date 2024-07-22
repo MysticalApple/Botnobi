@@ -15,6 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from time import sleep
 
+import Levenshtein
 import aiohttp
 import discord
 import feedparser
@@ -41,6 +42,7 @@ commit_feeds_file = "commitfeeds.txt"
 google_creds_file = "google_credentials.json"
 sqlConnection = sqlite3.connect("whois.db")
 sqlPointer = sqlConnection.cursor()
+sqlConnection.load_extension("sqlite-src/spellfix.so")
 
 # Check if config.json has the required values
 if config_get("server_id") is None:
@@ -48,11 +50,13 @@ if config_get("server_id") is None:
 if config_get("verification_sheet_url") is None:
     raise ValueError("verification_sheet_url is not set in config.json")
 
-# Check if a database exists
+# Check if a database exists, if not, create one
 sqlPointer.execute(
     "CREATE TABLE IF NOT EXISTS whois (user_id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, email TEXT, "
     "discord_name TEXT,discord_display_name TEXT, server_join_date TEXT , school TEXT, graduation_year INTEGER, present INTEGER, "
     "opt_in INTEGER);")
+sqlPointer.execute("CREATE VIRTUAL TABLE IF NOT EXISTS discord_names USING spellfix1;")
+sqlPointer.execute("CREATE VIRTUAL TABLE IF NOT EXISTS discord_display_names USING spellfix1;")
 sqlConnection.commit()
 
 
@@ -69,6 +73,7 @@ async def on_ready():
     update_commit_feed.start()
     await sync_data()
     await set_user_status()
+    print("All data synced")
 
 
 async def fetch_remote():
@@ -110,12 +115,11 @@ async def sync_data():
     diff = await get_diff()
     for element in diff["del"]:
         sqlPointer.execute("DELETE FROM whois WHERE user_id = ?", [element["UUID (do NOT change)"]])
-        sqlConnection.commit()
     for element in diff["add"]:
         discord_name_temp = bot.get_user(element["UUID (do NOT change)"])
         if discord_name_temp is None:
-            discord_name = "Unknown"
-            discord_display_name = "Unknown"
+            discord_name = "unknown"
+            discord_display_name = "unknown"
         else:
             discord_name = discord_name_temp.name
             discord_display_name = discord_name_temp.display_name
@@ -125,18 +129,28 @@ async def sync_data():
         sqlPointer.execute(
             "INSERT INTO whois (user_id, first_name, last_name, email, discord_name,discord_display_name, server_join_date, school, graduation_year) VALUES (?,?,?,?,?,?,?,?,?)",
             user_info)
-        sqlConnection.commit()
+    sqlConnection.commit()
     await set_user_status()
+    await update_name_db()
 
 
 async def set_user_status():
     guild = bot.get_guild(config_get("server_id"))
     role = discord.utils.get(guild.roles, name="b:whois opted-in")
+    sqlPointer.execute("UPDATE whois SET opt_in = 0, present = 0")
     for member in bot.get_all_members():
         sqlPointer.execute("Update whois SET present = 1 WHERE user_id = ?", [member.id])
         if role in member.roles:
             sqlPointer.execute("Update whois SET opt_in = 1 WHERE user_id = ?", [member.id])
-        sqlConnection.commit()
+    sqlConnection.commit()
+
+
+async def update_name_db():
+    sqlPointer.execute("DELETE FROM discord_names")
+    sqlPointer.execute("DELETE FROM discord_display_names")
+    sqlPointer.execute("INSERT INTO discord_names (word) SELECT discord_name FROM whois;")
+    sqlPointer.execute("INSERT INTO discord_display_names (word) SELECT discord_display_name FROM whois;")
+    sqlConnection.commit()
 
 
 @bot.command(name="sync_whois")
@@ -618,7 +632,7 @@ async def whois(ctx, pram):
                                ['%' + pram + '%'])
             result = sqlPointer.fetchone()
             if result is None:
-                await fuzzy_search(pram)
+                await fuzzy_find_discord_name(ctx, pram)
                 return
             await send_embed(ctx, result)
         await send_embed(ctx, result)
@@ -628,20 +642,75 @@ async def send_embed(ctx, result):
     if result is None:
         await ctx.send("User not found, or has not opted in")
         return
-    embed = discord.Embed(title="Whois", color=ctx.guild.me.color)
+    if result[9] == 0:
+        await ctx.send("User is not in the server, placeholder msg")
+        return
+    user = await bot.fetch_user(result[0])
+    embed = discord.Embed(colour=user.accent_colour,
+                          title=f"{config_get('school_name')} Search result (`{ctx.message.content.split(' ')[0]}`)",
+                          description=f"This is an exact match for <@{result[0]}>")
+    embed.set_thumbnail(url=user.avatar)
     embed.add_field(name="First Name", value=result[1])
     embed.add_field(name="Last Name", value=result[2])
     embed.add_field(name="Email", value=result[3])
-    embed.add_field(name="Discord Name", value=result[4])
-    embed.add_field(name="Discord Display Name", value=result[5])
+    embed.add_field(name="Discord Username", value=result[4])
+    embed.add_field(name="Discord Display Name", value=f"<@{result[0]}>")
     embed.add_field(name="Server Join Date", value=result[6])
     embed.add_field(name="School", value=result[7])
     embed.add_field(name="Graduation Year", value=result[8])
-    await ctx.send(embed=embed)
+    await ctx.send(embed=embed, allowed_mentions=False)
 
 
-async def fuzzy_search(pram):
-    return "Under Construction"
+async def fuzzy_find_discord_name(ctx, pram):
+    return_val = []
+    levenshtein_limit = math.ceil(len(pram) / 3 * 100)
+    sqlPointer.execute("SELECT word FROM discord_display_names WHERE editdist3(lower(word), ?) < ?",
+                       [pram.lower(), levenshtein_limit])
+    result = sqlPointer.fetchall()
+    for data in result:
+        return_val.append((Levenshtein.ratio(data[0].lower(), pram.lower()), data[0], "display_name"))
+    sqlPointer.execute("SELECT word FROM discord_names WHERE editdist3(lower(word), ?) < ?",
+                       [pram.lower(), levenshtein_limit])
+    result = sqlPointer.fetchall()
+    for data in result:
+        return_val.append((Levenshtein.ratio(data[0].lower(), pram.lower()), data[0], "user_name"))
+    return_val.sort(key=lambda tup: tup[0], reverse=True)
+    # Get top 5 results
+    return_val = return_val[:10]
+    if not return_val:
+        await ctx.send("No user found, or has not opted in to the whois database")
+        return
+    top_result = return_val[0]
+    if top_result[2] == "display_name":
+        sqlPointer.execute("SELECT * FROM whois WHERE discord_display_name = ? AND opt_in = 1", [top_result[1]])
+    else:
+        sqlPointer.execute("SELECT * FROM whois WHERE discord_name = ? AND opt_in = 1", [top_result[1]])
+    top_result = sqlPointer.fetchone()
+    if top_result is None:
+        await ctx.send("No user found, or has not opted in to the whois database")
+        return
+    user = await bot.fetch_user(top_result[0])
+    embed = discord.Embed(colour=user.accent_colour,
+                          title=f"{config_get('school_name')} Fuzzy Search result (`{ctx.message.content.split(' ')[0]}`)",
+                          description=f"Top results for`{pram}`")
+    embed.add_field(name="Levenshtein ratio", value=return_val[0][0], inline=False)
+    embed.add_field(name="First Name", value=top_result[1])
+    embed.add_field(name="Last Name", value=top_result[2])
+    embed.add_field(name="Email", value=top_result[3])
+    embed.add_field(name="Discord Username", value=top_result[4])
+    embed.add_field(name="Discord Display Name", value=f"<@{top_result[0]}>")
+    embed.add_field(name="Server Join Date", value=top_result[6])
+    embed.add_field(name="School", value=top_result[7])
+    embed.add_field(name="Graduation Year", value=top_result[8])
+    return_val = return_val[1:]
+    for data in return_val:
+        if data[2] == "display_name":
+            sqlPointer.execute("SELECT * FROM whois WHERE discord_display_name = ? AND opt_in = 1", [data[1]])
+        else:
+            sqlPointer.execute("SELECT * FROM whois WHERE discord_name = ? AND opt_in = 1", [data[1]])
+        result = sqlPointer.fetchone()
+        embed.add_field(name="Other Matches", value=f"<@{result[0]}>, Levenshtein ratio: {data[0]}", inline=False)
+    await ctx.send(embed=embed, allowed_mentions=False)
 
 
 bot.run(bot.config_token)
