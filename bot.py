@@ -53,8 +53,8 @@ if config_get("verification_sheet_url") is None:
 # Check if a database exists, if not, create one
 sqlPointer.execute(
     "CREATE TABLE IF NOT EXISTS whois (user_id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, email TEXT, "
-    "discord_name TEXT,discord_display_name TEXT, server_join_date TEXT , school TEXT, graduation_year INTEGER, present INTEGER, "
-    "opt_in INTEGER);")
+    "discord_name TEXT,discord_display_name TEXT, server_join_date TEXT , school TEXT, graduation_year INTEGER, "
+    "present INTEGER, opt_in INTEGER);")
 sqlPointer.execute("CREATE VIRTUAL TABLE IF NOT EXISTS discord_names USING spellfix1;")
 sqlPointer.execute("CREATE VIRTUAL TABLE IF NOT EXISTS discord_display_names USING spellfix1;")
 sqlConnection.commit()

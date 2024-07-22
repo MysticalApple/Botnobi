@@ -1,0 +1,3 @@
+[submodule "spellfix-mirror"]
+	path = spellfix-mirror
+	url = https://github.com/Eason-Y-Lu/spellfix-mirror.git
