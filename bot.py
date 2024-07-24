@@ -776,6 +776,9 @@ async def send_embed(ctx, result):
         embed.add_field(name="Status", value="Absent", inline=True)
     else:
         embed.add_field(name="Status", value="Present", inline=True)
+    embed.set_footer(
+        text="Keep in mind b:whois searches usernames, while b:iswhom searches real names."
+    )
     await ctx.send(embed=embed, allowed_mentions=False)
 
 
@@ -857,6 +860,9 @@ async def fuzzy_find_discord_name(ctx, pram):
             value=f"<@{result[0]}>, Levenshtein ratio: {data[0]}",
             inline=False,
         )
+    embed.set_footer(
+        text="Keep in mind b:whois searches usernames, while b:iswhom searches real names."
+    )
     await ctx.send(embed=embed, allowed_mentions=False)
 
 
