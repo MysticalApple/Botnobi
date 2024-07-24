@@ -24,7 +24,8 @@ from PIL import Image, ImageColor
 from discord.ext import commands, tasks
 from num2words import num2words
 
-from utils.util import (config_get, config_set, get_feeds_from_file, write_feeds_to_file, clean_code, )
+from utils.util import (config_get, config_set,
+                        get_feeds_from_file, write_feeds_to_file, clean_code, )
 
 cwd = Path(__file__).parents[0]
 cwd = str(cwd)
@@ -55,15 +56,18 @@ sqlPointer.execute(
     "CREATE TABLE IF NOT EXISTS whois (user_id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, email TEXT, "
     "discord_name TEXT,discord_display_name TEXT, server_join_date TEXT , school TEXT, graduation_year INTEGER, "
     "present INTEGER, opt_in INTEGER);")
-sqlPointer.execute("CREATE VIRTUAL TABLE IF NOT EXISTS discord_names USING spellfix1;")
-sqlPointer.execute("CREATE VIRTUAL TABLE IF NOT EXISTS discord_display_names USING spellfix1;")
+sqlPointer.execute(
+    "CREATE VIRTUAL TABLE IF NOT EXISTS discord_names USING spellfix1;")
+sqlPointer.execute(
+    "CREATE VIRTUAL TABLE IF NOT EXISTS discord_display_names USING spellfix1;")
 sqlConnection.commit()
 
 
 # Are yah ready kids?
 @bot.event
 async def on_ready():
-    print(f"Logged in as: {bot.user.name} : {bot.user.id}\n-----\nCurrent prefix: '{command_prefix}'")
+    print(f"Logged in as: {bot.user.name} : {
+          bot.user.id}\n-----\nCurrent prefix: '{command_prefix}'")
     with open("us_words.csv") as f:
         reader = csv.reader(f)
         for row in reader:
@@ -114,7 +118,8 @@ async def get_diff():
 async def sync_data():
     diff = await get_diff()
     for element in diff["del"]:
-        sqlPointer.execute("DELETE FROM whois WHERE user_id = ?", [element["UUID (do NOT change)"]])
+        sqlPointer.execute("DELETE FROM whois WHERE user_id = ?", [
+                           element["UUID (do NOT change)"]])
     for element in diff["add"]:
         discord_name_temp = bot.get_user(element["UUID (do NOT change)"])
         if discord_name_temp is None:
@@ -139,17 +144,21 @@ async def set_user_status():
     role = discord.utils.get(guild.roles, name="b:whois opted-in")
     sqlPointer.execute("UPDATE whois SET opt_in = 0, present = 0")
     for member in bot.get_all_members():
-        sqlPointer.execute("Update whois SET present = 1 WHERE user_id = ?", [member.id])
+        sqlPointer.execute(
+            "Update whois SET present = 1 WHERE user_id = ?", [member.id])
         if role in member.roles:
-            sqlPointer.execute("Update whois SET opt_in = 1 WHERE user_id = ?", [member.id])
+            sqlPointer.execute(
+                "Update whois SET opt_in = 1 WHERE user_id = ?", [member.id])
     sqlConnection.commit()
 
 
 async def update_name_db():
     sqlPointer.execute("DELETE FROM discord_names")
     sqlPointer.execute("DELETE FROM discord_display_names")
-    sqlPointer.execute("INSERT INTO discord_names (word) SELECT discord_name FROM whois;")
-    sqlPointer.execute("INSERT INTO discord_display_names (word) SELECT discord_display_name FROM whois;")
+    sqlPointer.execute(
+        "INSERT INTO discord_names (word) SELECT discord_name FROM whois;")
+    sqlPointer.execute(
+        "INSERT INTO discord_display_names (word) SELECT discord_display_name FROM whois;")
     sqlConnection.commit()
 
 
@@ -208,23 +217,29 @@ async def on_raw_reaction_add(reaction):
 
     # Starboard
     star = "⭐"
-    star_count = next((r.count for r in message.reactions if r.emoji == star), 0)
+    star_count = next(
+        (r.count for r in message.reactions if r.emoji == star), 0)
     if star_count >= config_get("minimum_starboard_stars") and message.guild.id == 710932856251351111:
         starboard_messages = []
         with open("starboard.txt", "r") as file:
-            starboard_messages = [int(message_id) for message_id in file.read().rstrip().split("\n")]
+            starboard_messages = [
+                int(message_id) for message_id in file.read().rstrip().split("\n")]
 
         if message.id not in starboard_messages:
             starboard_messages.append(message.id)
             with open("starboard.txt", "w") as file:
-                file.write("\n".join([str(message_id) for message_id in starboard_messages]))
+                file.write("\n".join([str(message_id)
+                           for message_id in starboard_messages]))
 
             embed = discord.Embed(colour=message.author.colour,
-                                  description=f"{message.content}\n\n[Click for context]({message.jump_url})",
+                                  description=f"{message.content}\n\n[Click for context]({
+                                      message.jump_url})",
                                   timestamp=message.created_at, )
 
-            embed.set_author(name=message.author.display_name, icon_url=message.author.avatar)
-            embed.set_footer(text=f"{message.guild.name} | {message.channel.name}")
+            embed.set_author(name=message.author.display_name,
+                             icon_url=message.author.avatar)
+            embed.set_footer(text=f"{message.guild.name} | {
+                             message.channel.name}")
 
             if message.attachments != [] and "image" in message.attachments[0].content_type:
                 embed.set_image(url=message.attachments[0].url)
@@ -271,10 +286,12 @@ async def on_member_remove(member):
 
         # Creates an embed with info about who left and when
         # Format shamelessly stolen (and slightly changed) from https://github.com/ky28059
-        embed = discord.Embed(description=f"{member.mention} {member}", color=member.color, )
+        embed = discord.Embed(description=f"{member.mention} {
+                              member}", color=member.color, )
 
         embed.set_author(name="Member left the server", icon_url=member.avatar)
-        embed.set_footer(text=f"Joined: {join_date.month}/{join_date.day}/{join_date.year}")
+        embed.set_footer(
+            text=f"Joined: {join_date.month}/{join_date.day}/{join_date.year}")
 
         # Sends it
         await channel.send(embed=embed)
@@ -288,7 +305,8 @@ async def update_commit_feed():
     for feed in feeds:
         # Ignore old commits
         d = feedparser.parse(feed["link"])
-        new_commits = [commit for commit in d.entries if commit.id not in feed["commits"]]
+        new_commits = [
+            commit for commit in d.entries if commit.id not in feed["commits"]]
         feed["commits"].extend([commit.id for commit in new_commits])
         if not new_commits:
             continue
@@ -303,13 +321,16 @@ async def update_commit_feed():
 
         desc = ""
         for commit in new_commits:
-            desc += f"[`{commit.link.split('/')[-1][:7]}`]({commit.link}) {commit.title} -- {commit.author}\n"
+            desc += f"[`{commit.link.split('/')[-1][:7]}`]({commit.link}) {
+                commit.title} -- {commit.author}\n"
 
         embed = discord.Embed(title=f"[{repo}:{branch}] {count} new commit{'s' if count > 1 else ''}",
-                              color=channel.guild.get_member(bot.user.id).color, description=desc,
+                              color=channel.guild.get_member(
+                                  bot.user.id).color, description=desc,
                               url=feed["link"][:-5] if count > 1 else commit.link, )
 
-        embed.timestamp = datetime.strptime(new_commits[0].updated, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+        embed.timestamp = datetime.strptime(
+            new_commits[0].updated, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
 
         embed.set_author(name=new_commits[0].author, url=f"https://github.com/{new_commits[0].author}",
                          icon_url=new_commits[0].media_thumbnail[0]["url"], )
@@ -343,7 +364,8 @@ async def info(ctx):
     embed = discord.Embed(title=":information_source: Botnobi", description="\uFEFF", color=ctx.guild.me.color,
                           timestamp=ctx.message.created_at, )
 
-    embed.add_field(name="<:github:1022443922133360640>", value="[Repo](https://github.com/MysticalApple/Botnobi)", )
+    embed.add_field(name="<:github:1022443922133360640>",
+                    value="[Repo](https://github.com/MysticalApple/Botnobi)", )
     embed.add_field(name="Python Version", value=python_version)
     embed.add_field(name="Discord.py Version", value=dpy_version)
     embed.add_field(name="Servers", value=server_count)
@@ -384,13 +406,15 @@ async def evaluate(ctx, *, code):
     """
     code = clean_code(code)
 
-    local_variables = {"discord": discord, "commands": commands, "bot": bot, "ctx": ctx}
+    local_variables = {"discord": discord,
+                       "commands": commands, "bot": bot, "ctx": ctx}
 
     stdout = io.StringIO()
 
     try:
         with contextlib.redirect_stdout(stdout):
-            exec(f"async def func():\n{textwrap.indent(code, '    ')}", local_variables)
+            exec(f"async def func():\n{textwrap.indent(
+                code, '    ')}", local_variables)
 
             await local_variables["func"]()
             result = f"py\n‌{stdout.getvalue()}\n"
@@ -621,11 +645,13 @@ async def whois(ctx, pram):
     pattern = re.compile("(<@|>)")
     if pattern.match(pram):
         pram = re.sub('(<@|>)', '', pram)
-        sqlPointer.execute("SELECT * FROM whois WHERE user_id = ? AND opt_in = 1", [pram])
+        sqlPointer.execute(
+            "SELECT * FROM whois WHERE user_id = ? AND opt_in = 1", [pram])
         result = sqlPointer.fetchone()
         await send_embed(ctx, result)
     else:
-        sqlPointer.execute("SELECT * FROM whois WHERE discord_name LIKE ? AND opt_in = 1", ['%' + pram + '%'])
+        sqlPointer.execute(
+            "SELECT * FROM whois WHERE discord_name LIKE ? AND opt_in = 1", ['%' + pram + '%'])
         result = sqlPointer.fetchone()
         if result is None:
             sqlPointer.execute("SELECT * FROM whois WHERE discord_display_name LIKE ? AND opt_in = 1",
@@ -647,7 +673,8 @@ async def send_embed(ctx, result):
         return
     user = await bot.fetch_user(result[0])
     embed = discord.Embed(colour=user.accent_colour,
-                          title=f"{config_get('school_name')} Search result (`{ctx.message.content.split(' ')[0]}`)",
+                          title=f"{config_get('school_name')} Search result (`{
+                              ctx.message.content.split(' ')[0]}`)",
                           description=f"This is an exact match for <@{result[0]}>")
     embed.set_thumbnail(url=user.avatar)
     embed.add_field(name="First Name", value=result[1])
@@ -668,12 +695,14 @@ async def fuzzy_find_discord_name(ctx, pram):
                        [pram.lower(), levenshtein_limit])
     result = sqlPointer.fetchall()
     for data in result:
-        return_val.append((Levenshtein.ratio(data[0].lower(), pram.lower()), data[0], "display_name"))
+        return_val.append(
+            (Levenshtein.ratio(data[0].lower(), pram.lower()), data[0], "display_name"))
     sqlPointer.execute("SELECT word FROM discord_names WHERE editdist3(lower(word), ?) < ?",
                        [pram.lower(), levenshtein_limit])
     result = sqlPointer.fetchall()
     for data in result:
-        return_val.append((Levenshtein.ratio(data[0].lower(), pram.lower()), data[0], "user_name"))
+        return_val.append(
+            (Levenshtein.ratio(data[0].lower(), pram.lower()), data[0], "user_name"))
     return_val.sort(key=lambda tup: tup[0], reverse=True)
     # Get top 5 results
     return_val = return_val[:10]
@@ -682,18 +711,22 @@ async def fuzzy_find_discord_name(ctx, pram):
         return
     top_result = return_val[0]
     if top_result[2] == "display_name":
-        sqlPointer.execute("SELECT * FROM whois WHERE discord_display_name = ? AND opt_in = 1", [top_result[1]])
+        sqlPointer.execute(
+            "SELECT * FROM whois WHERE discord_display_name = ? AND opt_in = 1", [top_result[1]])
     else:
-        sqlPointer.execute("SELECT * FROM whois WHERE discord_name = ? AND opt_in = 1", [top_result[1]])
+        sqlPointer.execute(
+            "SELECT * FROM whois WHERE discord_name = ? AND opt_in = 1", [top_result[1]])
     top_result = sqlPointer.fetchone()
     if top_result is None:
         await ctx.send("No user found, or has not opted in to the whois database")
         return
     user = await bot.fetch_user(top_result[0])
     embed = discord.Embed(colour=user.accent_colour,
-                          title=f"{config_get('school_name')} Fuzzy Search result (`{ctx.message.content.split(' ')[0]}`)",
+                          title=f"{config_get('school_name')} Fuzzy Search result (`{
+                              ctx.message.content.split(' ')[0]}`)",
                           description=f"Top results for`{pram}`")
-    embed.add_field(name="Levenshtein ratio", value=return_val[0][0], inline=False)
+    embed.add_field(name="Levenshtein ratio",
+                    value=return_val[0][0], inline=False)
     embed.add_field(name="First Name", value=top_result[1])
     embed.add_field(name="Last Name", value=top_result[2])
     embed.add_field(name="Email", value=top_result[3])
@@ -705,11 +738,14 @@ async def fuzzy_find_discord_name(ctx, pram):
     return_val = return_val[1:]
     for data in return_val:
         if data[2] == "display_name":
-            sqlPointer.execute("SELECT * FROM whois WHERE discord_display_name = ? AND opt_in = 1", [data[1]])
+            sqlPointer.execute(
+                "SELECT * FROM whois WHERE discord_display_name = ? AND opt_in = 1", [data[1]])
         else:
-            sqlPointer.execute("SELECT * FROM whois WHERE discord_name = ? AND opt_in = 1", [data[1]])
+            sqlPointer.execute(
+                "SELECT * FROM whois WHERE discord_name = ? AND opt_in = 1", [data[1]])
         result = sqlPointer.fetchone()
-        embed.add_field(name="Other Matches", value=f"<@{result[0]}>, Levenshtein ratio: {data[0]}", inline=False)
+        embed.add_field(name="Other Matches",
+                        value=f"<@{result[0]}>, Levenshtein ratio: {data[0]}", inline=False)
     await ctx.send(embed=embed, allowed_mentions=False)
 
 
