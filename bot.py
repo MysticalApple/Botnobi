@@ -3,7 +3,6 @@ import contextlib
 import csv
 import io
 import json
-import math
 import os
 import platform
 import random
@@ -20,6 +19,7 @@ import aiohttp
 import discord
 import feedparser
 import gspread
+import math
 from PIL import Image, ImageColor
 from discord.ext import commands, tasks
 from num2words import num2words
