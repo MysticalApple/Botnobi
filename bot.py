@@ -48,6 +48,7 @@ commit_feeds_file = "commitfeeds.txt"
 google_creds_file = "google_credentials.json"
 sqlConnection = sqlite3.connect("whois.db")
 sqlPointer = sqlConnection.cursor()
+sqlConnection.enable_load_extension(True)
 sqlConnection.load_extension(os.path.abspath("spellfix-mirror/spellfix.so"))
 
 # Check if config.json has the required values
