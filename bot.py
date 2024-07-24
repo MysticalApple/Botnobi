@@ -820,22 +820,26 @@ async def fuzzy_find_discord_name(ctx, pram):
     if top_result is None:
         await ctx.send("No user found, or has not opted in to the whois database")
         return
-    user = await bot.fetch_user(top_result[0])
     embed = discord.Embed(
-        colour=user.accent_colour,
+        colour=discord.Colour.brand_red(),
         title=f"{config_get('school_name')} Fuzzy Search result (`{
                               ctx.message.content.split(' ')[0]}`)",
-        description=f"Top results for`{pram}`",
+        description=f"Top results for `{pram}`",
     )
     embed.add_field(name="Levenshtein ratio", value=return_val[0][0], inline=False)
-    embed.add_field(name="First Name", value=top_result[1])
-    embed.add_field(name="Last Name", value=top_result[2])
-    embed.add_field(name="Email", value=top_result[3])
-    embed.add_field(name="Discord Username", value=top_result[4])
-    embed.add_field(name="Discord Display Name", value=f"<@{top_result[0]}>")
-    embed.add_field(name="Server Join Date", value=top_result[6])
-    embed.add_field(name="School", value=top_result[7])
-    embed.add_field(name="Graduation Year", value=top_result[8])
+    embed.add_field(name="Graduation Year", value=top_result[8], inline=True)
+    embed.add_field(name="Name", value=f"{top_result[1]} {top_result[2]}", inline=True)
+    embed.add_field(name="School", value=top_result[7], inline=True)
+    embed.add_field(name="Discord", value=top_result[4], inline=True)
+    embed.add_field(
+        name="Server Join Date",
+        value=f"<t:{int(datetime.strptime(top_result[6], '%m/%d/%Y %H:%M:%S').replace(tzinfo=timezone.utc).timestamp())}:D>",
+        inline=True,
+    )
+    if top_result[9] == 0:
+        embed.add_field(name="Status", value="Absent", inline=True)
+    else:
+        embed.add_field(name="Status", value="Present", inline=True)
     return_val = return_val[1:]
     for data in return_val:
         if data[2] == "display_name":
