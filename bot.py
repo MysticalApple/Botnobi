@@ -829,7 +829,7 @@ async def fuzzy_find_discord_name(ctx, pram):
                               ctx.message.content.split(' ')[0]}`)",
         description=f"Top results for `{pram}`",
     )
-    embed.add_field(name="Levenshtein ratio", value=return_val[0][0], inline=False)
+    embed.add_field(name="Levenshtein ratio", value=round(return_val[0][0],2), inline=False)
     embed.add_field(name="Graduation Year", value=top_result[8], inline=True)
     embed.add_field(name="Name", value=f"{top_result[1]} {top_result[2]}", inline=True)
     embed.add_field(name="School", value=top_result[7], inline=True)
@@ -857,7 +857,7 @@ async def fuzzy_find_discord_name(ctx, pram):
         result = sqlPointer.fetchone()
         embed.add_field(
             name="Other Matches",
-            value=f"<@{result[0]}>, Levenshtein ratio: {data[0]}",
+            value=f"<@{result[0]}>, Levenshtein ratio: {round(data[0],2)}",
             inline=False,
         )
     embed.set_footer(
