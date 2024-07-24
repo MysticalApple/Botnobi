@@ -61,7 +61,7 @@ if config_get("verification_sheet_url") is None:
 sqlPointer.execute(
     "CREATE TABLE IF NOT EXISTS whois (user_id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, email TEXT, "
     "discord_name TEXT,discord_display_name TEXT, server_join_date TEXT , school TEXT, graduation_year INTEGER, "
-    "present INTEGER, opt_in INTEGER);"
+    "present INTEGER DEFAULT 0, opt_in INTEGER);"
 )
 sqlPointer.execute("CREATE VIRTUAL TABLE IF NOT EXISTS discord_names USING spellfix1;")
 sqlPointer.execute(
@@ -167,7 +167,7 @@ async def sync_data():
 async def set_user_status():
     guild = bot.get_guild(config_get("server_id"))
     role = discord.utils.get(guild.roles, name="b:whois opted-in")
-    sqlPointer.execute("UPDATE whois SET opt_in = 0, present = 0")
+    sqlPointer.execute("UPDATE whois SET present = 0")
     for member in bot.get_all_members():
         sqlPointer.execute(
             "Update whois SET present = 1 WHERE user_id = ?", [member.id]
@@ -757,25 +757,25 @@ async def send_embed(ctx, result):
     if result is None:
         await ctx.send("User not found, or has not opted in")
         return
-    if result[9] == 0:
-        await ctx.send("User is not in the server, placeholder msg")
-        return
-    user = await bot.fetch_user(result[0])
     embed = discord.Embed(
-        colour=user.accent_colour,
+        colour=discord.Colour.brand_red(),
         title=f"{config_get('school_name')} Search result (`{
                               ctx.message.content.split(' ')[0]}`)",
         description=f"This is an exact match for <@{result[0]}>",
     )
-    embed.set_thumbnail(url=user.avatar)
-    embed.add_field(name="First Name", value=result[1])
-    embed.add_field(name="Last Name", value=result[2])
-    embed.add_field(name="Email", value=result[3])
-    embed.add_field(name="Discord Username", value=result[4])
-    embed.add_field(name="Discord Display Name", value=f"<@{result[0]}>")
-    embed.add_field(name="Server Join Date", value=result[6])
-    embed.add_field(name="School", value=result[7])
-    embed.add_field(name="Graduation Year", value=result[8])
+    embed.add_field(name="Graduation Year", value=result[8], inline=True)
+    embed.add_field(name="Name", value=f"{result[1]} {result[2]}", inline=True)
+    embed.add_field(name="School", value=result[7], inline=True)
+    embed.add_field(name="Discord", value=result[4], inline=True)
+    embed.add_field(
+        name="Server Join Date",
+        value=f"<t:{int(datetime.strptime(result[6], '%m/%d/%Y %H:%M:%S').replace(tzinfo=timezone.utc).timestamp())}:D>",
+        inline=True,
+    )
+    if result[9] == 0:
+        embed.add_field(name="Status", value="Absent", inline=True)
+    else:
+        embed.add_field(name="Status", value="Present", inline=True)
     await ctx.send(embed=embed, allowed_mentions=False)
 
 
