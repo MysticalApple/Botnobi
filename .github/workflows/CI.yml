@@ -31,7 +31,7 @@ jobs:
             echo "{\"token\":\"${{ secrets.TOKEN }}\"}" > secrets.json
             echo $GOOGLE > google_credentials.json
             echo $CONFIG > config.json
-         env:
+        env:
             GOOGLE: ${{ secrets.GOOGLE }}
             CONFIG: ${{ vars.CONFIG }}
       - name: Pull submodule
