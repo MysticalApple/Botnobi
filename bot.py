@@ -766,11 +766,11 @@ async def send_embed(ctx, result):
 
 
 async def fuzzy_find_discord_name(ctx, pram):
-    levenshtein_limit = math.ceil(len(pram) / 3 * 100)
+    levenshtein_limit = math.ceil(len(pram) * 50)
     sql_parameters = [pram, pram, pram, levenshtein_limit, pram, levenshtein_limit, pram, pram]
     sqlPointer.execute("SELECT*,MIN(editdist3(lower(discord_display_name), lower(?)), editdist3(lower(discord_name), lower(?))) FROM whois WHERE opt_in = 1 and (editdist3(lower(discord_display_name), lower(?)) < ? or editdist3(lower(discord_name), lower(?)) < ?) ORDER BY MIN(editdist3(lower(discord_display_name), lower(?)), editdist3(lower(discord_name), lower(?)));", sql_parameters)
     result = sqlPointer.fetchmany(6)
-    if result is None:
+    if not result:
         await ctx.send("User not found, or has not opted in")
         return
     top_result = result[0]
