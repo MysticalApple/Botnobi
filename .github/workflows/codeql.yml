@@ -84,7 +84,7 @@ jobs:
       run: |
         git submodule update --init --recursive --remote
         gcc -Og perlin.c -o perlin -lm
-        cd spellfix-mirror && gcc -g -fPIC -shared spellfix.c -o spellfix.so
+        cd spellfix-mirror &&  mv * ../ && cd .. && gcc -g -fPIC -shared spellfix.c -o spellfix.so
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
