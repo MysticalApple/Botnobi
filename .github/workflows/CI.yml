@@ -41,5 +41,5 @@ jobs:
       - name: CI the bot for 15 min
         if: ${{ vars.TOKEN != '' }}
         timeout-minutes: 15
-        run: docker run -it botnobi
+        run: docker run -t botnobi
         continue-on-error: true
