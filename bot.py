@@ -726,7 +726,7 @@ async def whois(ctx, pram):
     """
     Looks up a user in the whois database
     """
-    pattern = re.compile("(<@|>)")
+    pattern = re.compile("(<@[0-9]*>)")
     if pattern.match(pram):
         pram = re.sub("(<@|>)", "", pram)
         sqlPointer.execute(
