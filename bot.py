@@ -750,9 +750,15 @@ async def send_embed(ctx, result):
     embed.add_field(name="Name", value=f"{result[1]} {result[2]}", inline=True)
     embed.add_field(name="School", value=result[7], inline=True)
     embed.add_field(name="Discord", value=result[4], inline=True)
+    datetime_str = result[6]
+    try:
+        dt = datetime.strptime(datetime_str, '%m/%d/%Y %H:%M:%S')
+        timestamp = int(dt.replace(tzinfo=timezone.utc).timestamp())
+    except ValueError:
+        timestamp = result[6]
     embed.add_field(
         name="Server Join Date",
-        value=f"<t:{int(datetime.strptime(result[6], '%m/%d/%Y %H:%M:%S').replace(tzinfo=timezone.utc).timestamp())}:D>",
+        value=f"<t:{timestamp}:D>",
         inline=True,
     )
     if result[9] == 0:
@@ -785,9 +791,15 @@ async def fuzzy_find_discord_name(ctx, pram):
     embed.add_field(name="Name", value=f"{top_result[1]} {top_result[2]}", inline=True)
     embed.add_field(name="School", value=top_result[7], inline=True)
     embed.add_field(name="Discord", value=top_result[4], inline=True)
+    datetime_str = top_result[6]
+    try:
+        dt = datetime.strptime(datetime_str, '%m/%d/%Y %H:%M:%S')
+        timestamp = int(dt.replace(tzinfo=timezone.utc).timestamp())
+    except ValueError:
+        timestamp = top_result[6]
     embed.add_field(
         name="Server Join Date",
-        value=f"<t:{int(datetime.strptime(top_result[6], '%m/%d/%Y %H:%M:%S').replace(tzinfo=timezone.utc).timestamp())}:D>",
+        value=f"<t:{timestamp}:D>",
         inline=True,
     )
     if top_result[9] == 0:
