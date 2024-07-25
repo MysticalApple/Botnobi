@@ -33,7 +33,9 @@ jobs:
             echo "{\"token\":\"${{ vars.CONFIG }}\"}" > config.json
       - name: Install requirements
         if: ${{ vars.TOKEN != '' }}
-        run: pip install --no-cache-dir -r requirements.txt
+        run: |
+            sudo apt-get update && sudo apt-get -y upgrade 
+            pip install --no-cache-dir -r requirements.txt
       - name: Build Perlin.c
         if: ${{ vars.TOKEN != '' }}
         run: clang -O3 perlin.c -o perlin -lm
