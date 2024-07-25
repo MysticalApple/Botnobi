@@ -14,7 +14,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from time import sleep
 
-import Levenshtein
 import aiohttp
 import discord
 import feedparser
@@ -61,11 +60,7 @@ if config_get("verification_sheet_url") is None:
 sqlPointer.execute(
     "CREATE TABLE IF NOT EXISTS whois (user_id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, email TEXT, "
     "discord_name TEXT,discord_display_name TEXT, server_join_date TEXT , school TEXT, graduation_year INTEGER, "
-    "present INTEGER DEFAULT 0, opt_in INTEGER);"
-)
-sqlPointer.execute("CREATE VIRTUAL TABLE IF NOT EXISTS discord_names USING spellfix1;")
-sqlPointer.execute(
-    "CREATE VIRTUAL TABLE IF NOT EXISTS discord_display_names USING spellfix1;"
+    "present INTEGER DEFAULT 0 NOT NULL, opt_in INTEGER DEFAULT 0 NOT NULL );"
 )
 sqlConnection.commit()
 
@@ -161,7 +156,6 @@ async def sync_data():
         )
     sqlConnection.commit()
     await set_user_status()
-    await update_name_db()
 
 
 async def set_user_status():
@@ -178,17 +172,6 @@ async def set_user_status():
             )
     sqlConnection.commit()
 
-
-async def update_name_db():
-    sqlPointer.execute("DELETE FROM discord_names")
-    sqlPointer.execute("DELETE FROM discord_display_names")
-    sqlPointer.execute(
-        "INSERT INTO discord_names (word) SELECT discord_name FROM whois;"
-    )
-    sqlPointer.execute(
-        "INSERT INTO discord_display_names (word) SELECT discord_display_name FROM whois;"
-    )
-    sqlConnection.commit()
 
 
 @bot.command(name="sync_whois")
@@ -728,7 +711,7 @@ async def whois(ctx, pram):
     """
     pattern = re.compile("(<@[0-9]*>)")
     if pattern.match(pram):
-        pram = re.sub("(<@[0-9]*>)", "", pram)
+        pram = re.sub("(<@|>)", "", pram)
         sqlPointer.execute(
             "SELECT * FROM whois WHERE user_id = ? AND opt_in = 1", [pram]
         )
@@ -783,53 +766,21 @@ async def send_embed(ctx, result):
 
 
 async def fuzzy_find_discord_name(ctx, pram):
-    return_val = []
     levenshtein_limit = math.ceil(len(pram) / 3 * 100)
-    sqlPointer.execute(
-        "SELECT word FROM discord_display_names WHERE editdist3(lower(word), ?) < ?",
-        [pram.lower(), levenshtein_limit],
-    )
-    result = sqlPointer.fetchall()
-    for data in result:
-        return_val.append(
-            (Levenshtein.ratio(data[0].lower(), pram.lower()), data[0], "display_name")
-        )
-    sqlPointer.execute(
-        "SELECT word FROM discord_names WHERE editdist3(lower(word), ?) < ?",
-        [pram.lower(), levenshtein_limit],
-    )
-    result = sqlPointer.fetchall()
-    for data in result:
-        return_val.append(
-            (Levenshtein.ratio(data[0].lower(), pram.lower()), data[0], "user_name")
-        )
-    return_val.sort(key=lambda tup: tup[0], reverse=True)
-    # Get top 5 results
-    return_val = return_val[:10]
-    if not return_val:
-        await ctx.send("No user found, or has not opted in to the whois database")
+    sql_parameters = [pram, pram, pram, levenshtein_limit, pram, levenshtein_limit, pram, pram]
+    sqlPointer.execute("SELECT*,MIN(editdist3(lower(discord_display_name), lower(?)), editdist3(lower(discord_name), lower(?))) FROM whois WHERE opt_in = 1 and (editdist3(lower(discord_display_name), lower(?)) < ? or editdist3(lower(discord_name), lower(?)) < ?) ORDER BY MIN(editdist3(lower(discord_display_name), lower(?)), editdist3(lower(discord_name), lower(?)));", sql_parameters)
+    result = sqlPointer.fetchmany(6)
+    if result is None:
+        await ctx.send("User not found, or has not opted in")
         return
-    top_result = return_val[0]
-    if top_result[2] == "display_name":
-        sqlPointer.execute(
-            "SELECT * FROM whois WHERE discord_display_name = ? AND opt_in = 1",
-            [top_result[1]],
-        )
-    else:
-        sqlPointer.execute(
-            "SELECT * FROM whois WHERE discord_name = ? AND opt_in = 1", [top_result[1]]
-        )
-    top_result = sqlPointer.fetchone()
-    if top_result is None:
-        await ctx.send("No user found, or has not opted in to the whois database")
-        return
+    top_result = result[0]
     embed = discord.Embed(
-        colour=discord.Colour.brand_red(),
-        title=f"{config_get('school_name')} Fuzzy Search result (`{
-                              ctx.message.content.split(' ')[0]}`)",
-        description=f"Top results for `{pram}`",
-    )
-    embed.add_field(name="Levenshtein ratio", value=round(return_val[0][0],2), inline=False)
+            colour=discord.Colour.brand_red(),
+            title=f"{config_get('school_name')} Fuzzy Search result (`{
+            ctx.message.content.split(' ')[0]}`)",
+            description=f"Top results for `{pram}`",
+        )
+    embed.add_field(name="Levenshtein Distance", value=round(top_result[11], 2), inline=False)
     embed.add_field(name="Graduation Year", value=top_result[8], inline=True)
     embed.add_field(name="Name", value=f"{top_result[1]} {top_result[2]}", inline=True)
     embed.add_field(name="School", value=top_result[7], inline=True)
@@ -843,26 +794,16 @@ async def fuzzy_find_discord_name(ctx, pram):
         embed.add_field(name="Status", value="Absent", inline=True)
     else:
         embed.add_field(name="Status", value="Present", inline=True)
-    return_val = return_val[1:]
-    for data in return_val:
-        if data[2] == "display_name":
-            sqlPointer.execute(
-                "SELECT * FROM whois WHERE discord_display_name = ? AND opt_in = 1",
-                [data[1]],
-            )
-        else:
-            sqlPointer.execute(
-                "SELECT * FROM whois WHERE discord_name = ? AND opt_in = 1", [data[1]]
-            )
-        result = sqlPointer.fetchone()
-        embed.add_field(
-            name="Other Matches",
-            value=f"<@{result[0]}>, Levenshtein ratio: {round(data[0],2)}",
-            inline=False,
+    other_result = result[1:]
+    if other_result:
+        output = "Levenshtein Distance (Higher is Worse), Graduation Year, Name, School, Discord \n"
+        for other in other_result:
+            formatted = f"{other[11]}, {other[8]}, {other[1]} {other[2]}, <@{other[0]}> \n"
+            output += formatted
+        embed.add_field(name="Other Results", value=output, inline=False)
+        embed.set_footer(
+            text="Keep in mind b:whois searches usernames, while b:iswhom searches real names."
         )
-    embed.set_footer(
-        text="Keep in mind b:whois searches usernames, while b:iswhom searches real names."
-    )
     await ctx.send(embed=embed, allowed_mentions=False)
 
 
