@@ -728,7 +728,7 @@ async def whois(ctx, pram):
     """
     pattern = re.compile("(<@[0-9]*>)")
     if pattern.match(pram):
-        pram = re.sub("(<@|>)", "", pram)
+        pram = re.sub("(<@[0-9]*>)", "", pram)
         sqlPointer.execute(
             "SELECT * FROM whois WHERE user_id = ? AND opt_in = 1", [pram]
         )
