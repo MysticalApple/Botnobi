@@ -29,8 +29,8 @@ jobs:
         if: ${{ vars.TOKEN != '' }}
         run: | 
             echo "{\"token\":\"${{ secrets.TOKEN }}\"}" > secrets.json
-            echo "{\"token\":\"${{ secrets.GOOGLE }}\"}" > google_credentials.json
-            echo "{\"token\":\"${{ vars.CONFIG }}\"}" > config.json
+            echo "${{ secrets.GOOGLE }}" > google_credentials.json
+            echo "${{ vars.CONFIG }}" > config.json
       - name: Pull submodule
         if: ${{ vars.TOKEN != '' }}
         run: |
