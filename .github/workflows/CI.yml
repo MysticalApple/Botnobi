@@ -31,21 +31,15 @@ jobs:
             echo "{\"token\":\"${{ secrets.TOKEN }}\"}" > secrets.json
             echo "{\"token\":\"${{ secrets.GOOGLE }}\"}" > google_credentials.json
             echo "{\"token\":\"${{ vars.CONFIG }}\"}" > config.json
-      - name: Install requirements
-        if: ${{ vars.TOKEN != '' }}
-        run: |
-            sudo apt-get update && sudo apt-get -y upgrade 
-            pip install --no-cache-dir -r requirements.txt
-      - name: Build Perlin.c
-        if: ${{ vars.TOKEN != '' }}
-        run: clang -O3 perlin.c -o perlin -lm
-      - name: Build Spellfix.so
+      - name: Pull submodule
         if: ${{ vars.TOKEN != '' }}
         run: |
             git submodule update --init --recursive --remote
-            cd spellfix-mirror && gcc -g -fPIC -shared spellfix.c -o spellfix.so
-      - name: CI the bot for 5 min
+      - name: Build Docker img
         if: ${{ vars.TOKEN != '' }}
-        timeout-minutes: 5
-        run: python bot.py
+        run: docker build -t botnobi .
+      - name: CI the bot for 15 min
+        if: ${{ vars.TOKEN != '' }}
+        timeout-minutes: 15
+        run: docker run -it botnobi
         continue-on-error: true
