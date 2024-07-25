@@ -27,13 +27,21 @@ jobs:
         uses: actions/checkout@v4
       - name: Create secrets.json file from secrets
         if: ${{ vars.TOKEN != '' }}
-        run: echo "{\"token\":\"${{ secrets.TOKEN }}\"}" > secrets.json
+        run: | 
+            echo "{\"token\":\"${{ secrets.TOKEN }}\"}" > secrets.json
+            echo "{\"token\":\"${{ secrets.GOOGLE }}\"}" > google_credentials.json
+            echo "{\"token\":\"${{ vars.CONFIG }}\"}" > config.json
       - name: Install requirements
         if: ${{ vars.TOKEN != '' }}
         run: pip install --no-cache-dir -r requirements.txt
       - name: Build Perlin.c
         if: ${{ vars.TOKEN != '' }}
         run: clang -O3 perlin.c -o perlin -lm
+      - name: Build Spellfix.so
+        if: ${{ vars.TOKEN != '' }}
+        run: |
+            git submodule update --init --recursive --remote
+            cd spellfix-mirror && gcc -g -fPIC -shared spellfix.c -o spellfix.so
       - name: CI the bot for 5 min
         if: ${{ vars.TOKEN != '' }}
         timeout-minutes: 5
