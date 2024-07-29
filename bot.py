@@ -1,8 +1,13 @@
 # Libraries I may or may not use
+import aiohttp
 import contextlib
 import csv
+import discord
+import feedparser
+import gspread
 import io
 import json
+import math
 import os
 import platform
 import random
@@ -11,17 +16,13 @@ import sqlite3
 import textwrap
 import traceback
 from datetime import datetime, timezone
+from discord.ext import commands, tasks
+from fuzzywuzzy import fuzz
+from num2words import num2words
 from pathlib import Path
+from PIL import Image, ImageColor
 from time import sleep
 
-import aiohttp
-import discord
-import feedparser
-import gspread
-import math
-from PIL import Image, ImageColor
-from discord.ext import commands, tasks
-from num2words import num2words
 
 from utils.util import (
     config_get,
@@ -46,7 +47,7 @@ rr_file = "reaction_roles.csv"
 commit_feeds_file = "commitfeeds.txt"
 google_creds_file = "google_credentials.json"
 sqlConnection = sqlite3.connect("whois.db")
-sqlPointer = sqlConnection.cursor()
+sql_pointer = sqlConnection.cursor()
 sqlConnection.enable_load_extension(True)
 sqlConnection.load_extension(os.path.abspath("spellfix-mirror/spellfix.so"))
 
@@ -57,9 +58,9 @@ if config_get("verification_sheet_url") is None:
     raise ValueError("verification_sheet_url is not set in config.json")
 
 # Check if a database exists, if not, create one
-sqlPointer.execute(
+sql_pointer.execute(
     "CREATE TABLE IF NOT EXISTS whois (user_id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, email TEXT, "
-    "discord_name TEXT,discord_display_name TEXT, server_join_date TEXT , school TEXT, graduation_year INTEGER, "
+    "discord_name TEXT, discord_display_name TEXT, server_join_date TEXT  school TEXT, graduation_year INTEGER, "
     "present INTEGER DEFAULT 0 NOT NULL, opt_in INTEGER DEFAULT 0 NOT NULL );"
 )
 sqlConnection.commit()
@@ -69,8 +70,7 @@ sqlConnection.commit()
 @bot.event
 async def on_ready():
     print(
-        f"Logged in as: {bot.user.name} : {
-          bot.user.id}\n-----\nCurrent prefix: '{command_prefix}'"
+        f"Logged in as: {bot.user.name} : {bot.user.id}\n-----\nCurrent prefix: '{command_prefix}'"
     )
     with open("us_words.csv") as f:
         reader = csv.reader(f)
@@ -79,9 +79,7 @@ async def on_ready():
 
     await bot.change_presence(activity=discord.Game(name="Undergoing Renovations"))
     update_commit_feed.start()
-    await sync_data()
-    await set_user_status()
-    print("All data synced")
+    sync_whois_data.start()
 
 
 async def fetch_remote():
@@ -93,52 +91,56 @@ async def fetch_remote():
 
 
 async def fetch_local():
-    db = []
-    sqlPointer.execute("SELECT * FROM whois")
-    for records in sqlPointer.fetchall():
-        user_data = {
-            "Timestamp": records[5],
-            "Email Address": records[3],
-            "First Name": records[1],
-            "Last Name": records[2],
-            "School": records[6],
-            "Graduation Year": records[7],
-            "UUID (do NOT change)": records[0],
+    sql_pointer.execute("SELECT * FROM whois")
+    return [
+        {
+            "Timestamp": record[6],
+            "Email Address": record[3],
+            "First Name": record[1],
+            "Last Name": record[2],
+            "School": record[7],
+            "Graduation Year": record[8],
+            "UUID (do NOT change)": record[0],
         }
-        db.append(user_data)
-    return db
+        for record in sql_pointer.fetchall()
+    ]
 
 
 async def get_diff():
     remote = await fetch_remote()
     local = await fetch_local()
-    diff_add = []
-    diff_del = []
-    for record in remote:
-        if record not in local:
-            diff_add.append(record)
-    for record in local:
-        if record not in remote:
-            diff_del.append(record)
+    diff_add = [record for record in remote if record not in local]
+    diff_del = [record for record in local if record not in remote]
+
     diff = {"add": diff_add, "del": diff_del}
+    print(f"Additions: {len(diff["add"])}, Deletions: {len(diff["del"])}")
     return diff
 
 
-@tasks.loop(minutes=10)
-async def sync_data():
+@tasks.loop(minutes=60)
+async def sync_whois_data():
     diff = await get_diff()
     for element in diff["del"]:
-        sqlPointer.execute(
-            "DELETE FROM whois WHERE user_id = ?", [element["UUID (do NOT change)"]]
+        sql_pointer.execute(
+            "DELETE FROM whois WHERE user_id = ?;", [element["UUID (do NOT change)"]]
         )
     for element in diff["add"]:
-        discord_name_temp = bot.get_user(element["UUID (do NOT change)"])
-        if discord_name_temp is None:
-            discord_name = "unknown"
-            discord_display_name = "unknown"
+        discord_user = bot.get_user(element["UUID (do NOT change)"])  # Cached
+        if discord_user is None:  # Not cached
+            try:
+                discord_user = await bot.fetch_user(
+                    int(element["UUID (do NOT change)"])
+                )
+            except discord.errors.NotFound:
+                pass  # Happens when former users delete their accounts
+
+        if discord_user is None:
+            discord_name = "?"
+            discord_display_name = "?"
         else:
-            discord_name = discord_name_temp.name
-            discord_display_name = discord_name_temp.display_name
+            discord_name = discord_user.name
+            discord_display_name = discord_user.display_name
+
         user_info = (
             element["UUID (do NOT change)"],
             element["First Name"],
@@ -150,28 +152,38 @@ async def sync_data():
             element["School"],
             element["Graduation Year"],
         )
-        sqlPointer.execute(
-            "INSERT INTO whois (user_id, first_name, last_name, email, discord_name,discord_display_name, server_join_date, school, graduation_year) VALUES (?,?,?,?,?,?,?,?,?)",
+        sql_pointer.execute(  # IGNORE deals with duplicate entries
+            """
+            INSERT OR IGNORE INTO whois (
+                user_id,
+                first_name,
+                last_name,
+                email,
+                discord_name,
+                discord_display_name,
+                server_join_date,
+                school,
+                graduation_year
+            ) VALUES (?,?,?,?,?,?,?,?,?);
+            """,
             user_info,
         )
-    sqlConnection.commit()
+        sqlConnection.commit()
     await set_user_status()
+    print(f"All user data synced at {datetime.now()}")
 
 
 async def set_user_status():
     guild = bot.get_guild(config_get("server_id"))
     role = discord.utils.get(guild.roles, name="b:whois opted-in")
-    sqlPointer.execute("UPDATE whois SET present = 0")
+    sql_pointer.execute("UPDATE whois SET present = 0")
     for member in bot.get_all_members():
-        sqlPointer.execute(
-            "Update whois SET present = 1 WHERE user_id = ?", [member.id]
+        sql_pointer.execute(
+            "Update whois SET present = 1, opt_in = ? WHERE user_id = ?",
+            [1 if role in member.roles else 0, member.id],
         )
-        if role in member.roles:
-            sqlPointer.execute(
-                "Update whois SET opt_in = 1 WHERE user_id = ?", [member.id]
-            )
-    sqlConnection.commit()
 
+    sqlConnection.commit()
 
 
 @bot.command(name="sync_whois")
@@ -179,7 +191,7 @@ async def sync_whois(ctx):
     """
     Syncs the whois database with the Google sheet
     """
-    await sync_data()
+    await sync_whois_data()
     await ctx.send("Synced!")
 
 
@@ -254,8 +266,7 @@ async def on_raw_reaction_add(reaction):
 
             embed = discord.Embed(
                 colour=message.author.colour,
-                description=f"{message.content}\n\n[Click for context]({
-                                      message.jump_url})",
+                description=f"{message.content}\n\n[Click for context]({message.jump_url})",
                 timestamp=message.created_at,
             )
 
@@ -359,8 +370,7 @@ async def update_commit_feed():
 
         desc = ""
         for commit in new_commits:
-            desc += f"[`{commit.link.split('/')[-1][:7]}`]({commit.link}) {
-                commit.title} -- {commit.author}\n"
+            desc += f"[`{commit.link.split('/')[-1][:7]}`]({commit.link}) {commit.title} -- {commit.author}\n"
 
         embed = discord.Embed(
             title=f"[{repo}:{branch}] {count} new commit{'s' if count > 1 else ''}",
@@ -705,118 +715,170 @@ async def addrepo(ctx, link):
 
 
 @bot.command(name="whois")
-async def whois(ctx, pram):
+async def whois(ctx, *, search):
     """
     Looks up a user in the whois database
     """
-    pattern = re.compile("(<@[0-9]*>)")
-    if pattern.match(pram):
-        pram = re.sub("(<@|>)", "", pram)
-        sqlPointer.execute(
-            "SELECT * FROM whois WHERE user_id = ? AND opt_in = 1", [pram]
+    user = whois_search_exact(search)
+    if user:
+        await ctx.send(
+            embed=await get_whois_embed(search, [user]), allowed_mentions=None
         )
-        result = sqlPointer.fetchone()
-        await send_embed(ctx, result)
-    else:
-        sqlPointer.execute(
-            "SELECT * FROM whois WHERE discord_name LIKE ? AND opt_in = 1",
-            ["%" + pram + "%"],
-        )
-        result = sqlPointer.fetchone()
-        if result is None:
-            sqlPointer.execute(
-                "SELECT * FROM whois WHERE discord_display_name LIKE ? AND opt_in = 1",
-                ["%" + pram + "%"],
-            )
-            result = sqlPointer.fetchone()
-            if result is None:
-                await fuzzy_find_discord_name(ctx, pram)
-                return
-            await send_embed(ctx, result)
-        await send_embed(ctx, result)
-
-
-async def send_embed(ctx, result):
-    if result is None:
-        await ctx.send("User not found, or has not opted in")
         return
+
+    users = whois_search_fuzzy(search)
+    if len(users) == 0:
+        await ctx.send("failed")
+        return
+
+    for user in users:
+        user[11] = max(
+            fuzz.token_sort_ratio(search, user[4]),
+            fuzz.token_sort_ratio(search, user[5])
+        )
+    users.sort(key=lambda x: x[11], reverse=True)
+    await ctx.send(
+        embed=await get_whois_embed(search, users),
+        allowed_mentions=None
+    )
+
+
+def whois_search_exact(search: str):
+    # Only mentions and numeric user ids are treated as exact searches.
+    match = re.match(r"<@(\d+)>", search)
+    if match:
+        user_id = match.group(1)
+    elif search.isdigit():
+        user_id = int(search)
+    else:
+        return None
+
+    # fetchone returns None if the user can't be found, so the behavior
+    # should be the same as if it were not an exact search (i.e. it
+    # falls through to fuzzy search). This ensures compatibility with
+    # purely numeric usernames/display names.
+    return sql_pointer.execute(
+        "SELECT * FROM whois WHERE user_id = ? AND opt_in = 1;", (user_id,)
+    ).fetchone()
+
+
+def whois_search_fuzzy(search: str):
+    sql_pointer.execute(
+        """
+        WITH Results AS (
+            SELECT
+                *,
+                MIN(
+                    editdist3(?, discord_display_name),
+                    editdist3(?, discord_name)
+                ) AS distance
+            FROM
+                whois
+            WHERE
+                discord_name NOT LIKE 'deleted_user_%'
+                AND opt_in = 1
+        )
+        SELECT
+            *
+        FROM
+            Results
+        ORDER BY
+            distance
+        ASC;
+        """,
+        (search, search),
+    )
+    results = sql_pointer.fetchmany(6)
+    return [list(entry) for entry in results] # Convert into list of lists
+
+
+@bot.command(name="iswhom")
+async def iswhom(ctx, *, search):
+    sql_pointer.execute(
+        """
+        WITH Results AS (
+            SELECT
+                *,
+                MIN(
+                    editdist3(?, first_name),
+                    editdist3(?, last_name),
+                    editdist3(?, first_name || ' ' || last_name)
+                ) AS distance
+            FROM
+                whois
+            WHERE
+                opt_in = 1
+        )
+        SELECT
+            *
+        FROM
+            Results
+        ORDER BY
+            distance
+        ASC;
+        """,
+        (search, search, search)
+    )
+    results = [list(entry) for entry in sql_pointer.fetchmany(6)]
+    if len(results) == 0:
+        await ctx.send("failed")
+        return
+
+    for user in results:
+        user[11] = fuzz.partial_token_sort_ratio(search, " ".join(user[1:3]))
+    results.sort(key=lambda x: x[11], reverse=True)
+
+    await ctx.send(
+        embed=await get_whois_embed(search, results),
+        allowed_mentions=None
+    )
+
+
+
+async def get_whois_embed(search: str, results) -> discord.Embed:
+    exact = len(results) == 1
+
+    person = results[0]
+    user = await bot.fetch_user(person[0])
+
     embed = discord.Embed(
         colour=discord.Colour.brand_red(),
-        title=f"{config_get('school_name')} Search result (`{
-                              ctx.message.content.split(' ')[0]}`)",
-        description=f"This is an exact match for <@{result[0]}>",
+        title=f"{config_get('school_name')} Server User Info",
+        description=f"Information about {user.mention}",
     )
-    embed.add_field(name="Graduation Year", value=result[8], inline=True)
-    embed.add_field(name="Name", value=f"{result[1]} {result[2]}", inline=True)
-    embed.add_field(name="School", value=result[7], inline=True)
-    embed.add_field(name="Discord", value=result[4], inline=True)
-    datetime_str = result[6]
-    try:
-        dt = datetime.strptime(datetime_str, '%m/%d/%Y %H:%M:%S')
-        timestamp = int(dt.replace(tzinfo=timezone.utc).timestamp())
-    except ValueError:
-        timestamp = result[6]
-    embed.add_field(
-        name="Server Join Date",
-        value=f"<t:{timestamp}:D>",
-        inline=True,
-    )
-    if result[9] == 0:
-        embed.add_field(name="Status", value="Absent", inline=True)
-    else:
-        embed.add_field(name="Status", value="Present", inline=True)
     embed.set_footer(
         text="Keep in mind b:whois searches usernames, while b:iswhom searches real names."
     )
-    await ctx.send(embed=embed, allowed_mentions=False)
 
-
-async def fuzzy_find_discord_name(ctx, pram):
-    levenshtein_limit = math.ceil(len(pram) * 50)
-    sql_parameters = [pram, pram, pram, levenshtein_limit, pram, levenshtein_limit, pram, pram]
-    sqlPointer.execute("SELECT*,MIN(editdist3(lower(discord_display_name), lower(?)), editdist3(lower(discord_name), lower(?))) FROM whois WHERE opt_in = 1 and (editdist3(lower(discord_display_name), lower(?)) < ? or editdist3(lower(discord_name), lower(?)) < ?) ORDER BY MIN(editdist3(lower(discord_display_name), lower(?)), editdist3(lower(discord_name), lower(?)));", sql_parameters)
-    result = sqlPointer.fetchmany(6)
-    if not result:
-        await ctx.send("User not found, or has not opted in")
-        return
-    top_result = result[0]
-    embed = discord.Embed(
-            colour=discord.Colour.brand_red(),
-            title=f"{config_get('school_name')} Fuzzy Search result (`{
-            ctx.message.content.split(' ')[0]}`)",
-            description=f"Top results for `{pram}`",
-        )
-    embed.add_field(name="Levenshtein Distance", value=round(top_result[11], 2), inline=False)
-    embed.add_field(name="Graduation Year", value=top_result[8], inline=True)
-    embed.add_field(name="Name", value=f"{top_result[1]} {top_result[2]}", inline=True)
-    embed.add_field(name="School", value=top_result[7], inline=True)
-    embed.add_field(name="Discord", value=top_result[4], inline=True)
-    datetime_str = top_result[6]
-    try:
-        dt = datetime.strptime(datetime_str, '%m/%d/%Y %H:%M:%S')
-        timestamp = int(dt.replace(tzinfo=timezone.utc).timestamp())
-    except ValueError:
-        timestamp = top_result[6]
+    embed.add_field(inline=True, name="Year", value=person[8])
+    embed.add_field(inline=True, name="Name", value=person[1] + " " + person[2])
+    embed.add_field(inline=True, name="School", value=person[7])
+    embed.add_field(inline=True, name="Discord", value=user.name)
     embed.add_field(
-        name="Server Join Date",
-        value=f"<t:{timestamp}:D>",
         inline=True,
+        name="Joined",
+        value=f"<t:{int(datetime.strptime(person[6], '%m/%d/%Y %H:%M:%S').replace(tzinfo=timezone.utc).timestamp())}:D>",
     )
-    if top_result[9] == 0:
-        embed.add_field(name="Status", value="Absent", inline=True)
-    else:
-        embed.add_field(name="Status", value="Present", inline=True)
-    other_result = result[1:]
-    if other_result:
-        output = "Levenshtein Distance (Higher is Worse), Graduation Year, Name, School, Discord \n"
-        for other in other_result:
-            formatted = f"{other[11]}, {other[8]}, {other[1]} {other[2]}, <@{other[0]}> \n"
-            output += formatted
-        embed.add_field(name="Other Results", value=output, inline=False)
-        embed.set_footer(
-            text="Keep in mind b:whois searches usernames, while b:iswhom searches real names."
+    embed.add_field(
+        inline=True,
+        name="Status",
+        value="Present" if person[9] == 1 else "Absent",
+    )
+
+    if not exact:
+        # Display shortened versions of next five matches' info
+        shortened_results = [
+            f"{person[11]}%: {person[8]} {person[1]} {person[2]} <@{person[0]}>"
+            for person in results
+        ]
+        other_results = "\n".join(shortened_results[1:6])
+        embed.add_field(
+            inline=False,
+            name=f"Fuzzy Search Results for: `{search}`",
+            value=f"The top result was {person[11]}% similar. Other results:\n{other_results}"
         )
-    await ctx.send(embed=embed, allowed_mentions=False)
+
+    return embed
 
 
 bot.run(bot.config_token)
