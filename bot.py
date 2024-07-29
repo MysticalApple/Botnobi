@@ -60,7 +60,7 @@ if config_get("verification_sheet_url") is None:
 # Check if a database exists, if not, create one
 sql_pointer.execute(
     "CREATE TABLE IF NOT EXISTS whois (user_id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, email TEXT, "
-    "discord_name TEXT, discord_display_name TEXT, server_join_date TEXT  school TEXT, graduation_year INTEGER, "
+    "discord_name TEXT, discord_display_name TEXT, server_join_date TEXT, school TEXT, graduation_year INTEGER, "
     "present INTEGER DEFAULT 0 NOT NULL, opt_in INTEGER DEFAULT 0 NOT NULL );"
 )
 sqlConnection.commit()
@@ -113,7 +113,7 @@ async def get_diff():
     diff_del = [record for record in local if record not in remote]
 
     diff = {"add": diff_add, "del": diff_del}
-    print(f"Additions: {len(diff["add"])}, Deletions: {len(diff["del"])}")
+    print(f"Additions: {len(diff['add'])}, Deletions: {len(diff['del'])}")
     return diff
 
 
@@ -274,8 +274,7 @@ async def on_raw_reaction_add(reaction):
                 name=message.author.display_name, icon_url=message.author.avatar
             )
             embed.set_footer(
-                text=f"{message.guild.name} | {
-                             message.channel.name}"
+                text=f"{message.guild.name} | {message.channel.name}"
             )
 
             if (
@@ -331,8 +330,7 @@ async def on_member_remove(member):
         # Creates an embed with info about who left and when
         # Format shamelessly stolen (and slightly changed) from https://github.com/ky28059
         embed = discord.Embed(
-            description=f"{member.mention} {
-                              member}",
+            description=f"{member.mention} {member}",
             color=member.color,
         )
 
@@ -481,8 +479,7 @@ async def evaluate(ctx, *, code):
     try:
         with contextlib.redirect_stdout(stdout):
             exec(
-                f"async def func():\n{textwrap.indent(
-                code, '    ')}",
+                f"async def func():\n{textwrap.indent(code, '    ')}",
                 local_variables,
             )
 
