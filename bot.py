@@ -177,7 +177,7 @@ async def set_user_status():
     guild = bot.get_guild(config_get("server_id"))
     role = discord.utils.get(guild.roles, name="b:whois opted-in")
     sql_pointer.execute("UPDATE whois SET present = 0")
-    for member in bot.get_all_members():
+    for member in guild.members: 
         sql_pointer.execute(
             "Update whois SET present = 1, opt_in = ? WHERE user_id = ?",
             [1 if role in member.roles else 0, member.id],
