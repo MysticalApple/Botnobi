@@ -196,10 +196,10 @@ async def sync_whois(ctx):
         await ctx.send("Synced!, rate limit bypassed")
         return
     if called_time is not None and (datetime.now() - called_time).seconds < 600:
-        await ctx.send("Please wait a minute before trying again.")
+        await ctx.send(f"Please wait {600-((datetime.now()-called_time).seconds)} minute before trying again.")
         return
     await sync_whois_data()
-    await ctx.send("Synced!")
+    await ctx.send("Synced!, rate limited for 10 minutes")
     called_time = datetime.now()
 
 
