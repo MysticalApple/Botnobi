@@ -796,19 +796,16 @@ async def whoami(ctx):
     if ctx.guild.id != config_get("server_id"):
         return
 
-    try:
-        sql_pointer.execute("SELECT * FROM whois WHERE user_id = ?", (ctx.author.id,))
-        result = sql_pointer.fetchone()
-        if result is None:
-            await ctx.reply("Don't ask me...", mention_author=False)
+    sql_pointer.execute("SELECT * FROM whois WHERE user_id = ?", (ctx.author.id,))
+    result = sql_pointer.fetchone()
+    if result is None:
+        await ctx.reply("Don't ask me...", mention_author=False)
 
-        await ctx.reply(
-            embed=await get_whois_embed("", [result], whoami=True),
-            mention_author=False,
-            allowed_mentions=False,
-        )
-    except Exception as e:
-        print(e)
+    await ctx.reply(
+        embed=await get_whois_embed("", [result], whoami=True),
+        mention_author=False,
+        allowed_mentions=False,
+    )
 
 
 def whois_search_exact(search: str):
