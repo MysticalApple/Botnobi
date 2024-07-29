@@ -646,7 +646,7 @@ async def toggle(
 @commands.has_role(999078830973136977)
 async def configset(
     ctx,
-    feature: any = commands.parmeter(description="The feature to set"),
+    feature: any = commands.parameter(description="The feature to set"),
     value: any = commands.parameter(description="The value to set"),
 ):
     """
@@ -664,7 +664,7 @@ async def configset(
 @commands.is_owner()
 async def delete(
     ctx,
-    channel_id: int = commands.parmeter(description="The channel id"),
+    channel_id: int = commands.parameter(description="The channel id"),
     message_id: int = commands.parameter(description="The message id"),
 ):
     """
