@@ -717,8 +717,11 @@ async def addrepo(ctx, link):
 @bot.command(name="whois")
 async def whois(ctx, *, search):
     """
-    Looks up a user in the whois database
+    Looks up a person by username/display name in the verification sheet.
     """
+    if ctx.guild.id != config_get("server_id"):
+        return
+
     user = whois_search_exact(search)
     if user:
         await ctx.send(
@@ -734,13 +737,78 @@ async def whois(ctx, *, search):
     for user in users:
         user[11] = max(
             fuzz.token_sort_ratio(search, user[4]),
-            fuzz.token_sort_ratio(search, user[5])
+            fuzz.token_sort_ratio(search, user[5]),
         )
     users.sort(key=lambda x: x[11], reverse=True)
-    await ctx.send(
-        embed=await get_whois_embed(search, users),
-        allowed_mentions=None
+    await ctx.send(embed=await get_whois_embed(search, users), allowed_mentions=None)
+
+
+@bot.command(name="iswhom")
+async def iswhom(ctx, *, search):
+    """
+    Looks up a person by real name in the verification sheet.
+    """
+    if ctx.guild.id != config_get("server_id"):
+        return
+
+    sql_pointer.execute(
+        """
+        WITH Results AS (
+            SELECT
+                *,
+                MIN(
+                    editdist3(?, first_name),
+                    editdist3(?, last_name),
+                    editdist3(?, first_name || ' ' || last_name)
+                ) AS distance
+            FROM
+                whois
+            WHERE
+                opt_in = 1
+        )
+        SELECT
+            *
+        FROM
+            Results
+        ORDER BY
+            distance
+        ASC;
+        """,
+        (search, search, search),
     )
+    results = [list(entry) for entry in sql_pointer.fetchmany(6)]
+    if len(results) == 0:
+        await ctx.send("failed")
+        return
+
+    for user in results:
+        user[11] = fuzz.partial_token_sort_ratio(search, " ".join(user[1:3]))
+    results.sort(key=lambda x: x[11], reverse=True)
+
+    await ctx.send(embed=await get_whois_embed(search, results), allowed_mentions=None)
+
+
+@bot.command(name="whoami")
+async def whoami(ctx):
+    """
+    Who are you really?
+    """
+    if ctx.guild.id != config_get("server_id"):
+        return
+
+    try:
+        sql_pointer.execute("SELECT * FROM whois WHERE user_id = ?", (ctx.author.id,))
+        result = sql_pointer.fetchone()
+        if result is None:
+            await ctx.reply("Don't ask me...", mention_author=False)
+
+        await ctx.reply(
+            embed=await get_whois_embed("", [result], whoami=True),
+            mention_author=False,
+            allowed_mentions=False,
+        )
+    except Exception as e:
+        print(e)
 
 
 def whois_search_exact(search: str):
@@ -789,53 +857,10 @@ def whois_search_fuzzy(search: str):
         (search, search),
     )
     results = sql_pointer.fetchmany(6)
-    return [list(entry) for entry in results] # Convert into list of lists
+    return [list(entry) for entry in results]  # Convert into list of lists
 
 
-@bot.command(name="iswhom")
-async def iswhom(ctx, *, search):
-    sql_pointer.execute(
-        """
-        WITH Results AS (
-            SELECT
-                *,
-                MIN(
-                    editdist3(?, first_name),
-                    editdist3(?, last_name),
-                    editdist3(?, first_name || ' ' || last_name)
-                ) AS distance
-            FROM
-                whois
-            WHERE
-                opt_in = 1
-        )
-        SELECT
-            *
-        FROM
-            Results
-        ORDER BY
-            distance
-        ASC;
-        """,
-        (search, search, search)
-    )
-    results = [list(entry) for entry in sql_pointer.fetchmany(6)]
-    if len(results) == 0:
-        await ctx.send("failed")
-        return
-
-    for user in results:
-        user[11] = fuzz.partial_token_sort_ratio(search, " ".join(user[1:3]))
-    results.sort(key=lambda x: x[11], reverse=True)
-
-    await ctx.send(
-        embed=await get_whois_embed(search, results),
-        allowed_mentions=None
-    )
-
-
-
-async def get_whois_embed(search: str, results) -> discord.Embed:
+async def get_whois_embed(search: str, results, whoami=False) -> discord.Embed:
     exact = len(results) == 1
 
     person = results[0]
@@ -844,7 +869,11 @@ async def get_whois_embed(search: str, results) -> discord.Embed:
     embed = discord.Embed(
         colour=discord.Colour.brand_red(),
         title=f"{config_get('school_name')} Server User Info",
-        description=f"Information about {user.mention}",
+        description=(
+            f"Information about {user.mention}"
+            if not whoami
+            else "Having an identity crisis? Here's whom you told me you were:"
+        ),
     )
     embed.set_footer(
         text="Keep in mind b:whois searches usernames, while b:iswhom searches real names."
@@ -875,7 +904,7 @@ async def get_whois_embed(search: str, results) -> discord.Embed:
         embed.add_field(
             inline=False,
             name=f"Fuzzy Search Results for: `{search}`",
-            value=f"The top result was {person[11]}% similar. Other results:\n{other_results}"
+            value=f"The top result was {person[11]}% similar. Other results:\n{other_results}",
         )
 
     return embed
