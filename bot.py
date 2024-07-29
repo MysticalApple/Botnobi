@@ -191,8 +191,16 @@ async def sync_whois(ctx):
     """
     Syncs the whois database with the Google sheet
     """
+    if ctx.author.guild_permissions.administrator:
+        await sync_whois_data()
+        await ctx.send("Synced!, rate limit bypassed")
+        return
+    if called_time is not None and (datetime.now() - called_time).seconds < 600:
+        await ctx.send("Please wait a minute before trying again.")
+        return
     await sync_whois_data()
     await ctx.send("Synced!")
+    called_time = datetime.now()
 
 
 # Errors are not pog
