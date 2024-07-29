@@ -190,6 +190,7 @@ async def set_user_status():
 async def sync_whois(ctx):
     """
     Syncs the whois database with the Google sheet
+    Limited to once every 10 minutes.
     """
     if ctx.author.guild_permissions.administrator:
         await sync_whois_data()
@@ -760,7 +761,7 @@ async def whois(
     ),
 ):
     """
-    Looks up a person by username/display name in the verification sheet.
+    Looks up a person by username/display name in the database.
     """
     if ctx.guild.id != config_get("server_id"):
         return
