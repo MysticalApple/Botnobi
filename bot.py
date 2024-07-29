@@ -177,7 +177,7 @@ async def set_user_status():
     guild = bot.get_guild(config_get("server_id"))
     role = discord.utils.get(guild.roles, name="b:whois opted-in")
     sql_pointer.execute("UPDATE whois SET present = 0")
-    for member in guild.members: 
+    for member in guild.members:
         sql_pointer.execute(
             "Update whois SET present = 1, opt_in = ? WHERE user_id = ?",
             [1 if role in member.roles else 0, member.id],
@@ -193,13 +193,15 @@ async def sync_whois(ctx):
     """
     if ctx.author.guild_permissions.administrator:
         await sync_whois_data()
-        await ctx.send("Synced!, rate limit bypassed")
+        await ctx.send("Synced! Rate limit bypassed.")
         return
     if called_time is not None and (datetime.now() - called_time).seconds < 600:
-        await ctx.send(f"Please wait {600-((datetime.now()-called_time).seconds)} minute before trying again.")
+        await ctx.send(
+            f"Please wait {600-((datetime.now()-called_time).seconds)} secounds before trying again."
+        )
         return
     await sync_whois_data()
-    await ctx.send("Synced!, rate limited for 10 minutes")
+    await ctx.send("Synced! Rate limited for 10 minutes.")
     called_time = datetime.now()
 
 
@@ -281,9 +283,7 @@ async def on_raw_reaction_add(reaction):
             embed.set_author(
                 name=message.author.display_name, icon_url=message.author.avatar
             )
-            embed.set_footer(
-                text=f"{message.guild.name} | {message.channel.name}"
-            )
+            embed.set_footer(text=f"{message.guild.name} | {message.channel.name}")
 
             if (
                 message.attachments != []
@@ -443,7 +443,7 @@ async def info(ctx):
                 "<@595719716560175149>",
                 "<@1110811715169423381>",
                 "<@376423367731052575>",
-            ] # Ordered by commits, add yourself if you contribute
+            ]  # Ordered by commits, add yourself if you contribute
         ),
     )
 
@@ -512,6 +512,9 @@ async def sheep(ctx):
 
 @bot.command(name="moo")
 async def cow(ctx):
+    """
+    Sends a cow, the apt cow
+    """
     await ctx.send(
         "```               _     _\n"
         "              (_\\___( \\,\n"
@@ -561,7 +564,7 @@ async def inspire(ctx):
 
 
 @bot.command(name="color")
-async def color(ctx, *, hex):
+async def color(ctx, *, hex: any = commands.parameter(description="A hex color code")):
     """
     Sends a square of a solid color
     """
@@ -580,7 +583,9 @@ async def color(ctx, *, hex):
 
 
 @bot.command(name="stackify")
-async def stackify(ctx, count: int):
+async def stackify(
+    ctx, count: int = commands.parameter(description="The number of items")
+):
     """
     Converts an item count into Minecraft stacks
     """
@@ -590,7 +595,9 @@ async def stackify(ctx, count: int):
 
 
 @bot.command(name="shulkify")
-async def shulkify(ctx, count: int):
+async def shulkify(
+    ctx, count: int = commands.parameter(description="The number of items")
+):
     """
     Converts an item count into Minecraft shulkers (and stacks)
     """
@@ -605,7 +612,9 @@ async def shulkify(ctx, count: int):
 @bot.command(name="toggle")
 # Checks that user is Harvite
 @commands.has_role(999078830973136977)
-async def toggle(ctx, feature):
+async def toggle(
+    ctx, feature: any = commands.parameter(description="The feature to toggle")
+):
     """
     Toggles any boolean value in config.json
     """
@@ -635,7 +644,11 @@ async def toggle(ctx, feature):
 @bot.command(name="configset")
 # Checks that user is Harvite
 @commands.has_role(999078830973136977)
-async def configset(ctx, feature, value):
+async def configset(
+    ctx,
+    feature: any = commands.parmeter(description="The feature to set"),
+    value: any = commands.parameter(description="The value to set"),
+):
     """
     Sets any value in config.json
     """
@@ -649,7 +662,11 @@ async def configset(ctx, feature, value):
 
 @bot.command(name="delete")
 @commands.is_owner()
-async def delete(ctx, channel_id: int, message_id: int):
+async def delete(
+    ctx,
+    channel_id: int = commands.parmeter(description="The channel id"),
+    message_id: int = commands.parameter(description="The message id"),
+):
     """
     Deletes a specified message in a specified channel
     """
@@ -673,7 +690,7 @@ async def perlin(ctx):
 
 
 @bot.command(name="inrole")
-async def inrole(ctx, *, given_role):
+async def inrole(ctx, *, given_role: any = commands.parameter(description="The role")):
     """
     Lists members of a given role
     """
@@ -694,7 +711,12 @@ async def inrole(ctx, *, given_role):
 @bot.command(name="reactionrole")
 # Checks that user is Harvite
 @commands.has_role(999078830973136977)
-async def reactionrole(ctx, message_id: int, emoji, role_id: int):
+async def reactionrole(
+    ctx,
+    message_id: int = commands.parameter(description="The message id"),
+    emoji: any = commands.parameter(description="A emoji"),
+    role_id: int = commands.parameter(description="The role id"),
+):
     """
     Adds a reaction role
     """
@@ -705,7 +727,9 @@ async def reactionrole(ctx, message_id: int, emoji, role_id: int):
 
 
 @bot.command(name="addrepo")
-async def addrepo(ctx, link):
+async def addrepo(
+    ctx, link: str = commands.parameter(description="The Link to the GitHub Repository")
+):
     """
     Adds a github repository to be tracked for commits
     """
@@ -728,7 +752,13 @@ async def addrepo(ctx, link):
 
 
 @bot.command(name="whois")
-async def whois(ctx, *, search):
+async def whois(
+    ctx,
+    *,
+    search: str = commands.parameter(
+        description="Mention, id, username, or display name to be searched"
+    ),
+):
     """
     Looks up a person by username/display name in the verification sheet.
     """
@@ -757,7 +787,13 @@ async def whois(ctx, *, search):
 
 
 @bot.command(name="iswhom")
-async def iswhom(ctx, *, search):
+async def iswhom(
+    ctx,
+    *,
+    search: str = commands.parameter(
+        description="Real name, first last, to be searched"
+    ),
+):
     """
     Looks up a person by real name in the verification sheet.
     """
