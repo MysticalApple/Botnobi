@@ -417,21 +417,29 @@ async def info(ctx):
 
     embed = discord.Embed(
         title=":information_source: Botnobi",
-        description="\uFEFF",
+        description="",
         color=ctx.guild.me.color,
         timestamp=ctx.message.created_at,
     )
 
     embed.add_field(
-        name="<:github:1022443922133360640>",
+        name="<:github:842921746277203978>",
         value="[Repo](https://github.com/MysticalApple/Botnobi)",
     )
     embed.add_field(name="Python Version", value=python_version)
     embed.add_field(name="Discord.py Version", value=dpy_version)
     embed.add_field(name="Servers", value=server_count)
     embed.add_field(name="Users", value=user_count)
-    embed.add_field(name="Bot Creator", value="<@!595719716560175149>")
-    embed.add_field(name="Bot Maintainer", value="<@!1110811715169423381>")
+    embed.add_field(
+        name="Contributors",
+        value="\n".join(
+            [
+                "<@595719716560175149>",
+                "<@1110811715169423381>",
+                "<@376423367731052575>",
+            ] # Ordered by commits, add yourself if you contribute
+        ),
+    )
 
     embed.set_footer(text="As of")
     embed.set_author(name=ctx.guild.me.display_name, icon_url=bot.user.avatar)
