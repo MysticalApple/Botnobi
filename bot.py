@@ -1014,11 +1014,12 @@ async def get_whois_embed(search: str, results, whoami=False) -> discord.Embed:
     )
     embed.add_field(inline=True, name="School", value=person[7])
     embed.add_field(inline=True, name="Discord", value=user.name)
+    parsed_time = datetime.strptime(person[6], "%m/%d/%Y %H:%M:%S")
+    timestamp = parsed_time.replace(tzinfo=timezone.utc).timestamp()
     embed.add_field(
         inline=True,
         name="Joined",
-        value=f"<t:{int(datetime.strptime(person[6], '%m/%d/%Y %H:%M:%S').
-                        replace(tzinfo=timezone.utc).timestamp())}:D>",
+        value=f"<t:{int(timestamp)}:D>",
     )
     embed.add_field(
         inline=True,
