@@ -1,10 +1,6 @@
 # Libraries I may or may not use
-import aiohttp
 import contextlib
 import csv
-import discord
-import feedparser
-import gspread
 import io
 import json
 import math
@@ -16,13 +12,17 @@ import sqlite3
 import textwrap
 import traceback
 from datetime import datetime, timezone
+from pathlib import Path
+from time import sleep
+
+import aiohttp
+import discord
+import feedparser
+import gspread
+from PIL import Image, ImageColor
 from discord.ext import commands, tasks
 from fuzzywuzzy import fuzz
 from num2words import num2words
-from pathlib import Path
-from PIL import Image, ImageColor
-from time import sleep
-
 
 from utils.util import (
     config_get,
@@ -50,6 +50,7 @@ sqlConnection = sqlite3.connect("whois.db")
 sql_pointer = sqlConnection.cursor()
 sqlConnection.enable_load_extension(True)
 sqlConnection.load_extension(os.path.abspath("spellfix-mirror/spellfix.so"))
+sync_timer = None
 
 # Check if config.json has the required values
 if config_get("server_id") is None:
@@ -59,9 +60,13 @@ if config_get("verification_sheet_url") is None:
 
 # Check if a database exists, if not, create one
 sql_pointer.execute(
-    "CREATE TABLE IF NOT EXISTS whois (user_id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, email TEXT, "
-    "discord_name TEXT, discord_display_name TEXT, server_join_date TEXT, school TEXT, graduation_year INTEGER, "
-    "present INTEGER DEFAULT 0 NOT NULL, opt_in INTEGER DEFAULT 0 NOT NULL );"
+    """
+    CREATE TABLE IF NOT EXISTS whois (user_id INTEGER PRIMARY KEY,
+    first_name TEXT, last_name TEXT, email TEXT,discord_name TEXT,
+    discord_display_name TEXT, server_join_date TEXT, school TEXT,
+    graduation_year INTEGER,present INTEGER DEFAULT 0 NOT NULL, opt_in
+    INTEGER DEFAULT 0 NOT NULL );
+    """
 )
 sqlConnection.commit()
 
@@ -70,14 +75,17 @@ sqlConnection.commit()
 @bot.event
 async def on_ready():
     print(
-        f"Logged in as: {bot.user.name} : {bot.user.id}\n-----\nCurrent prefix: '{command_prefix}'"
+        f"Logged in as: {bot.user.name} : {bot.user.id}\n-----\nCurrent "
+        f"prefix: '{command_prefix}'"
     )
     with open("us_words.csv") as f:
         reader = csv.reader(f)
         for row in reader:
             us_words.append(row[0])
 
-    await bot.change_presence(activity=discord.Game(name="Undergoing Renovations"))
+    await bot.change_presence(
+        activity=discord.Game(name="Undergoing Renovations")
+    )
     update_commit_feed.start()
     sync_whois_data.start()
 
@@ -122,7 +130,8 @@ async def sync_whois_data():
     diff = await get_diff()
     for element in diff["del"]:
         sql_pointer.execute(
-            "DELETE FROM whois WHERE user_id = ?;", [element["UUID (do NOT change)"]]
+            "DELETE FROM whois WHERE user_id = ?;",
+            [element["UUID (do NOT change)"]],
         )
     for element in diff["add"]:
         discord_user = bot.get_user(element["UUID (do NOT change)"])  # Cached
@@ -177,7 +186,7 @@ async def set_user_status():
     guild = bot.get_guild(config_get("server_id"))
     role = discord.utils.get(guild.roles, name="b:whois opted-in")
     sql_pointer.execute("UPDATE whois SET present = 0")
-    for member in guild.members: 
+    for member in guild.members:
         sql_pointer.execute(
             "Update whois SET present = 1, opt_in = ? WHERE user_id = ?",
             [1 if role in member.roles else 0, member.id],
@@ -190,9 +199,24 @@ async def set_user_status():
 async def sync_whois(ctx):
     """
     Syncs the whois database with the Google sheet
+    Limited to once every 10 minutes.
     """
-    await sync_whois_data()
-    await ctx.send("Synced!")
+    if ctx.author.guild_permissions.administrator:
+        await sync_whois_data()
+        await ctx.send("Synced! Rate limit bypassed.")
+        return
+    global sync_timer
+    if sync_timer is None:
+        await sync_whois_data()
+        sync_timer = datetime.now()
+        await ctx.send("Synced!")
+    elif (datetime.now() - sync_timer).seconds > 600:
+        await sync_whois_data()
+        sync_timer = datetime.now()
+        await ctx.send("Synced!")
+    else:
+        next_sync = 600 - (datetime.now() - sync_timer).seconds
+        await ctx.send(f"Rate limited. Try again in {next_sync} seconds.")
 
 
 # Errors are not pog
@@ -220,19 +244,26 @@ async def on_message(message):
         f"<@!{bot.user.id}>" in message.content
         or f"<@{bot.user.id}>" in message.content
     ):
-        await message.reply(f"pingus pongus your mother is {random.choice(us_words)}")
+        await message.reply(
+            f"pingus pongus your mother is {random.choice(us_words)}"
+        )
 
     # Says goodnight to henry
     henry = bot.get_user(289180942583463938)
     goodnight_message = "gn guys!"
 
-    if message.author == henry and message.content.lower() == goodnight_message:
+    if (
+        message.author == henry
+        and message.content.lower() == goodnight_message
+    ):
         sleep(1)
         await message.channel.send("gn Henry!")
 
     # Just because my knee hurts doesn't mean I have arthritis
     if "ow my knee" in message.content.lower():
-        await message.reply(file=discord.File("owmyknee.png"), mention_author=False)
+        await message.reply(
+            file=discord.File("owmyknee.png"), mention_author=False
+        )
 
     await bot.process_commands(message)
 
@@ -246,7 +277,9 @@ async def on_raw_reaction_add(reaction):
 
     # Starboard
     star = "⭐"
-    star_count = next((r.count for r in message.reactions if r.emoji == star), 0)
+    star_count = next(
+        (r.count for r in message.reactions if r.emoji == star), 0
+    )
     if (
         star_count >= config_get("minimum_starboard_stars")
         and message.guild.id == 710932856251351111
@@ -254,24 +287,29 @@ async def on_raw_reaction_add(reaction):
         starboard_messages = []
         with open("starboard.txt", "r") as file:
             starboard_messages = [
-                int(message_id) for message_id in file.read().rstrip().split("\n")
+                int(message_id)
+                for message_id in file.read().rstrip().split("\n")
             ]
 
         if message.id not in starboard_messages:
             starboard_messages.append(message.id)
             with open("starboard.txt", "w") as file:
                 file.write(
-                    "\n".join([str(message_id) for message_id in starboard_messages])
+                    "\n".join(
+                        [str(message_id) for message_id in starboard_messages]
+                    )
                 )
 
             embed = discord.Embed(
                 colour=message.author.colour,
-                description=f"{message.content}\n\n[Click for context]({message.jump_url})",
+                description=f"{message.content}\n\n"
+                f"[Click for context]({message.jump_url})",
                 timestamp=message.created_at,
             )
 
             embed.set_author(
-                name=message.author.display_name, icon_url=message.author.avatar
+                name=message.author.display_name,
+                icon_url=message.author.avatar,
             )
             embed.set_footer(
                 text=f"{message.guild.name} | {message.channel.name}"
@@ -283,7 +321,9 @@ async def on_raw_reaction_add(reaction):
             ):
                 embed.set_image(url=message.attachments[0].url)
 
-            await bot.get_channel(config_get("starboard_channel_id")).send(embed=embed)
+            await bot.get_channel(config_get("starboard_channel_id")).send(
+                embed=embed
+            )
 
     # Reaction Roles (adding)
     reaction_roles = []
@@ -293,8 +333,13 @@ async def on_raw_reaction_add(reaction):
             reaction_roles.append(row)
 
     for rr in reaction_roles:
-        if message.id == int(rr["message_id"]) and str(reaction.emoji) == rr["emoji"]:
-            await reaction.member.add_roles(message.guild.get_role(int(rr["role_id"])))
+        if (
+            message.id == int(rr["message_id"])
+            and str(reaction.emoji) == rr["emoji"]
+        ):
+            await reaction.member.add_roles(
+                message.guild.get_role(int(rr["role_id"]))
+            )
 
 
 @bot.event
@@ -312,7 +357,10 @@ async def on_raw_reaction_remove(reaction):
             reaction_roles.append(row)
 
     for rr in reaction_roles:
-        if message.id == int(rr["message_id"]) and str(reaction.emoji) == rr["emoji"]:
+        if (
+            message.id == int(rr["message_id"])
+            and str(reaction.emoji) == rr["emoji"]
+        ):
             await reaction.member.remove_roles(
                 message.guild.get_role(int(rr["role_id"]))
             )
@@ -327,8 +375,9 @@ async def on_member_remove(member):
         channel = bot.get_channel(config_get("alerts_channel_id"))
         join_date = member.joined_at
 
-        # Creates an embed with info about who left and when
-        # Format shamelessly stolen (and slightly changed) from https://github.com/ky28059
+        # Creates an embed with info about who left and when Format
+        # shamelessly stolen (and slightly changed) from
+        # https://github.com/ky28059
         embed = discord.Embed(
             description=f"{member.mention} {member}",
             color=member.color,
@@ -358,7 +407,8 @@ async def update_commit_feed():
         if not new_commits:
             continue
 
-        # Prepare embed for sending (format stolen from https://github.com/Obi-Wan3/OB13-Cogs/blob/main/github/github.py
+        # Prepare embed for sending (format stolen from
+        # https://github.com/Obi-Wan3/OB13-Cogs/blob/main/github/github.py
         channel = bot.get_channel(config_get("commits_channel_id"))
 
         count = len(new_commits)
@@ -368,10 +418,14 @@ async def update_commit_feed():
 
         desc = ""
         for commit in new_commits:
-            desc += f"[`{commit.link.split('/')[-1][:7]}`]({commit.link}) {commit.title} -- {commit.author}\n"
+            desc += (
+                f"[`{commit.link.split('/')[-1][:7]}`]({commit.link}) "
+                f"{commit.title} -- {commit.author}\n"
+            )
 
         embed = discord.Embed(
-            title=f"[{repo}:{branch}] {count} new commit{'s' if count > 1 else ''}",
+            title=f"[{repo}:{branch}] {count} new commit"
+            f"{'s' if count > 1 else ''}",
             color=channel.guild.get_member(bot.user.id).color,
             description=desc,
             url=feed["link"][:-5] if count > 1 else commit.link,
@@ -435,7 +489,8 @@ async def info(ctx):
                 "<@595719716560175149>",
                 "<@1110811715169423381>",
                 "<@376423367731052575>",
-            ] # Ordered by commits, add yourself if you contribute
+            ]
+            # Ordered by commits, add yourself if you contribute
         ),
     )
 
@@ -472,7 +527,12 @@ async def evaluate(ctx, *, code):
     """
     code = clean_code(code)
 
-    local_variables = {"discord": discord, "commands": commands, "bot": bot, "ctx": ctx}
+    local_variables = {
+        "discord": discord,
+        "commands": commands,
+        "bot": bot,
+        "ctx": ctx,
+    }
 
     stdout = io.StringIO()
 
@@ -498,12 +558,16 @@ async def sheep(ctx):
     Sends a sheep
     """
     await ctx.send(
-        "<a:seansheep:718186115294691482>```\n         ,ww\n   wWWWWWWW_)\n   `WWWWWW'\n    II  II```"
+        "<a:seansheep:718186115294691482>```\n         ,ww\n   wWWWWWWW_)\n  "
+        " `WWWWWW'\n    II  II```"
     )
 
 
 @bot.command(name="moo")
 async def cow(ctx):
+    """
+    Sends a cow, the apt cow
+    """
     await ctx.send(
         "```               _     _\n"
         "              (_\\___( \\,\n"
@@ -519,23 +583,23 @@ async def cow(ctx):
 
 
 @bot.command(name="emotize")
-async def emotize(ctx, *, message):
+async def emotize(ctx, *, message=commands.parameter(description="")):
     """
     Converts text into discord emojis
     """
     output = ""
 
-    for l in message:
-        if l == " ":
-            output += l
-        elif l == "\n":
-            output += l
-        elif l.isdigit():
-            numword = num2words(l)
+    for letter in message:
+        if letter == " ":
+            output += letter
+        elif letter == "\n":
+            output += letter
+        elif letter.isdigit():
+            numword = num2words(letter)
             output += f":{numword}:"
-        elif l.isalpha():
-            l = l.lower()
-            output += f":regional_indicator_{l}:"
+        elif letter.isalpha():
+            letter = letter.lower()
+            output += f":regional_indicator_{letter}:"
 
     await ctx.send(output)
 
@@ -547,42 +611,62 @@ async def inspire(ctx):
     """
     async with ctx.typing():
         async with aiohttp.ClientSession() as session:
-            async with session.get("https://inspirobot.me/api?generate=true") as resp:
+            async with session.get(
+                "https://inspirobot.me/api?generate=true"
+            ) as resp:
                 r = await resp.text()
     await ctx.send(r)
 
 
 @bot.command(name="color")
-async def color(ctx, *, hex):
+async def color(
+    ctx,
+    *,
+    description=commands.parameter(
+        description="See help color for valid color codes"
+    ),
+):
     """
-    Sends a square of a solid color
+    Sends a square of color based on description given.
+    Valid color codes are:
+    - Hexadecimal (e.g. #000000)
+    - Hexadecimal with Alpha (e.g. #00000000)
+    - RGB (e.g. rgb(0, 0, 0))
+    - HSL (e.g. hsl(0, 0%, 0%))
+    - HSB (e.g. hsb((hue, saturation%, brightness%))
+    - Common color names (e.g. red)
+    - And X windows color names (e.g. X11 color names)
     """
     try:
-        color = ImageColor.getrgb(hex)
+        stylelor = ImageColor.getrgb(description)
 
     except Exception:
         await ctx.reply(
-            "Valid color codes can be found here: https://pillow.readthedocs.io/en/stable/reference/ImageColor.html",
+            f" Valid color codes are can be found at {command_prefix}help "
+            f"color",
             mention_author=False,
         )
+        return
 
-    img = Image.new("RGBA", (480, 480), color=color)
+    img = Image.new("RGBA", (480, 480), color=stylelor)
     img.save("color.png")
     await ctx.send(file=discord.File("color.png"))
 
 
 @bot.command(name="stackify")
-async def stackify(ctx, count: int):
+async def stackify(ctx, count: int = commands.parameter(description="")):
     """
     Converts an item count into Minecraft stacks
     """
     stacks = math.floor(count / 64)
     items = count % 64
-    await ctx.send(f"{count} items can fit into {stacks} stacks and {items} items.")
+    await ctx.send(
+        f"{count} items can fit into {stacks} stacks and {items} items."
+    )
 
 
 @bot.command(name="shulkify")
-async def shulkify(ctx, count: int):
+async def shulkify(ctx, count: int = commands.parameter(description="")):
     """
     Converts an item count into Minecraft shulkers (and stacks)
     """
@@ -590,14 +674,15 @@ async def shulkify(ctx, count: int):
     stacks = math.floor(count / 64) % 27
     items = count % 64
     await ctx.send(
-        f"{count} items can fit into {shulkers} shulkers, {stacks} stacks, and {items} items."
+        f"{count} items can fit into {shulkers} shulkers, {stacks} stacks, "
+        f"and {items} items."
     )
 
 
 @bot.command(name="toggle")
 # Checks that user is Harvite
 @commands.has_role(999078830973136977)
-async def toggle(ctx, feature):
+async def toggle(ctx, feature=commands.parameter(description="")):
     """
     Toggles any boolean value in config.json
     """
@@ -627,7 +712,11 @@ async def toggle(ctx, feature):
 @bot.command(name="configset")
 # Checks that user is Harvite
 @commands.has_role(999078830973136977)
-async def configset(ctx, feature, value):
+async def configset(
+    ctx,
+    feature=commands.parameter(description="The feature to set"),
+    value=commands.parameter(description="The value to set"),
+):
     """
     Sets any value in config.json
     """
@@ -641,7 +730,11 @@ async def configset(ctx, feature, value):
 
 @bot.command(name="delete")
 @commands.is_owner()
-async def delete(ctx, channel_id: int, message_id: int):
+async def delete(
+    ctx,
+    channel_id: int = commands.parameter(description=""),
+    message_id: int = commands.parameter(description=""),
+):
     """
     Deletes a specified message in a specified channel
     """
@@ -665,7 +758,13 @@ async def perlin(ctx):
 
 
 @bot.command(name="inrole")
-async def inrole(ctx, *, given_role):
+async def inrole(
+    ctx,
+    *,
+    given_role=commands.parameter(
+        description="The role either the name or the id"
+    ),
+):
     """
     Lists members of a given role
     """
@@ -686,7 +785,12 @@ async def inrole(ctx, *, given_role):
 @bot.command(name="reactionrole")
 # Checks that user is Harvite
 @commands.has_role(999078830973136977)
-async def reactionrole(ctx, message_id: int, emoji, role_id: int):
+async def reactionrole(
+    ctx,
+    message_id: int = commands.parameter(description=""),
+    emoji=commands.parameter(description=""),
+    role_id: int = commands.parameter(description=""),
+):
     """
     Adds a reaction role
     """
@@ -697,7 +801,10 @@ async def reactionrole(ctx, message_id: int, emoji, role_id: int):
 
 
 @bot.command(name="addrepo")
-async def addrepo(ctx, link):
+async def addrepo(
+    ctx,
+    link: str = commands.parameter(description=""),
+):
     """
     Adds a github repository to be tracked for commits
     """
@@ -720,9 +827,15 @@ async def addrepo(ctx, link):
 
 
 @bot.command(name="whois")
-async def whois(ctx, *, search):
+async def whois(
+    ctx,
+    *,
+    search: str = commands.parameter(
+        description="Mention, id, username, or display name to be searched"
+    ),
+):
     """
-    Looks up a person by username/display name in the verification sheet.
+    Looks up a person by username/display name or mention.
     """
     if ctx.guild.id != config_get("server_id"):
         return
@@ -745,13 +858,21 @@ async def whois(ctx, *, search):
             fuzz.token_sort_ratio(search, user[5]),
         )
     users.sort(key=lambda x: x[11], reverse=True)
-    await ctx.send(embed=await get_whois_embed(search, users), allowed_mentions=None)
+    await ctx.send(
+        embed=await get_whois_embed(search, users), allowed_mentions=None
+    )
 
 
 @bot.command(name="iswhom")
-async def iswhom(ctx, *, search):
+async def iswhom(
+    ctx,
+    *,
+    search: str = commands.parameter(
+        description="Real name, first last, to be searched"
+    ),
+):
     """
-    Looks up a person by real name in the verification sheet.
+    Looks up a person by real name.
     """
     if ctx.guild.id != config_get("server_id"):
         return
@@ -790,7 +911,9 @@ async def iswhom(ctx, *, search):
         user[11] = fuzz.partial_token_sort_ratio(search, " ".join(user[1:3]))
     results.sort(key=lambda x: x[11], reverse=True)
 
-    await ctx.send(embed=await get_whois_embed(search, results), allowed_mentions=None)
+    await ctx.send(
+        embed=await get_whois_embed(search, results), allowed_mentions=None
+    )
 
 
 @bot.command(name="whoami")
@@ -801,7 +924,9 @@ async def whoami(ctx):
     if ctx.guild.id != config_get("server_id"):
         return
 
-    sql_pointer.execute("SELECT * FROM whois WHERE user_id = ?", (ctx.author.id,))
+    sql_pointer.execute(
+        "SELECT * FROM whois WHERE user_id = ?", (ctx.author.id,)
+    )
     result = sql_pointer.fetchone()
     if result is None:
         await ctx.reply("Don't ask me...", mention_author=False)
@@ -878,17 +1003,22 @@ async def get_whois_embed(search: str, results, whoami=False) -> discord.Embed:
         ),
     )
     embed.set_footer(
-        text="Keep in mind b:whois searches usernames, while b:iswhom searches real names."
+        text="Keep in mind b:whois searches usernames, while b:iswhom "
+        "searches real names."
     )
 
     embed.add_field(inline=True, name="Year", value=person[8])
-    embed.add_field(inline=True, name="Name", value=person[1] + " " + person[2])
+    embed.add_field(
+        inline=True, name="Name", value=person[1] + " " + person[2]
+    )
     embed.add_field(inline=True, name="School", value=person[7])
     embed.add_field(inline=True, name="Discord", value=user.name)
+    parsed_time = datetime.strptime(person[6], "%m/%d/%Y %H:%M:%S")
+    timestamp = parsed_time.replace(tzinfo=timezone.utc).timestamp()
     embed.add_field(
         inline=True,
         name="Joined",
-        value=f"<t:{int(datetime.strptime(person[6], '%m/%d/%Y %H:%M:%S').replace(tzinfo=timezone.utc).timestamp())}:D>",
+        value=f"<t:{int(timestamp)}:D>",
     )
     embed.add_field(
         inline=True,
@@ -899,14 +1029,18 @@ async def get_whois_embed(search: str, results, whoami=False) -> discord.Embed:
     if not exact:
         # Display shortened versions of next five matches' info
         shortened_results = [
-            f"{person[11]}%: {person[8]} {person[1]} {person[2]} <@{person[0]}>"
+            (
+                f"{person[11]}%: {person[8]} {person[1]} {person[2]} "
+                f"<@{person[0]}>"
+            )
             for person in results
         ]
         other_results = "\n".join(shortened_results[1:6])
         embed.add_field(
             inline=False,
             name=f"Fuzzy Search Results for: `{search}`",
-            value=f"The top result was {person[11]}% similar. Other results:\n{other_results}",
+            value=f"The top result was {person[11]}% similar. Other results:\n"
+            f"{other_results}",
         )
 
     return embed
