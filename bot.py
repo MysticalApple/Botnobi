@@ -88,7 +88,6 @@ async def on_ready():
     )
     update_commit_feed.start()
     sync_whois_data.start()
-    await DEBUG()
 
 
 async def fetch_remote():
@@ -1045,11 +1044,6 @@ async def get_whois_embed(search: str, results, whoami=False) -> discord.Embed:
         )
 
     return embed
-
-
-async def debug():
-    # Here for debugging purposes
-    return
 
 
 bot.run(bot.config_token)
