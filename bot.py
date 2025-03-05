@@ -175,7 +175,7 @@ async def sync_whois_data():
 
 async def set_user_status():
     guild = bot.get_guild(config_get("server_id"))
-    role = discord.utils.get(guild.roles, name="b:whois opted-in")
+    role = discord.utils.get(guild.roles, name="Verified")
     sql_pointer.execute("UPDATE whois SET present = 0")
     for member in guild.members: 
         sql_pointer.execute(
@@ -756,15 +756,16 @@ async def iswhom(ctx, *, search):
     if ctx.guild.id != config_get("server_id"):
         return
 
+    search = search.lower()
     sql_pointer.execute(
         """
         WITH Results AS (
             SELECT
                 *,
                 MIN(
-                    editdist3(?, first_name),
-                    editdist3(?, last_name),
-                    editdist3(?, first_name || ' ' || last_name)
+                    editdist3(?, LOWER(first_name)),
+                    editdist3(?, LOWER(last_name)),
+                    editdist3(?, LOWER(first_name || ' ' || last_name))
                 ) AS distance
             FROM
                 whois
